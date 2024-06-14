@@ -23,8 +23,8 @@ type (
 	}
 
 	GetRoomsResponse struct {
-		Rooms []Room `json:"rooms"`
-		Total int    `json:"total"`
+		Rooms []*Room `json:"rooms"`
+		Total int     `json:"total"`
 	}
 
 	MatchingResponse struct {

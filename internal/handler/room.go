@@ -23,7 +23,7 @@ func NewRoomHandler() *RoomHandler {
 // @Failure 400 {object} schema.ErrResponse
 // @Router /rooms [get]
 func (h *RoomHandler) GetRooms(c echo.Context) error {
-	rooms := []schema.Room{
+	rooms := []*schema.Room{
 		{
 			ID:         "1",
 			Name:       "room1",

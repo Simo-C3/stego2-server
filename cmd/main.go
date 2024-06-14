@@ -25,13 +25,10 @@ func main() {
 
 	e.GET("/health", Health)
 
-	g:= e.Group("/api/v1")
+	g := e.Group("/api/v1")
 
 	// Init router
 	router.InitRoomRouter(g, *handler.NewRoomHandler())
-
-
-
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
