@@ -8,7 +8,6 @@ import (
 )
 
 type RoomHandler struct {
-
 }
 
 func NewRoomHandler() *RoomHandler {
@@ -26,20 +25,20 @@ func NewRoomHandler() *RoomHandler {
 func (h *RoomHandler) GetRooms(c echo.Context) error {
 	rooms := []schema.Room{
 		{
-			Id: "1",
-			Name: "room1",
-			HostName: "host1",
+			ID:         "1",
+			Name:       "room1",
+			HostName:   "host1",
 			MinUserNum: 1,
 			MaxUserNum: 4,
-			UseCpu: true,
+			UseCpu:     true,
 		},
 		{
-			Id: "2",
-			Name: "room2",
-			HostName: "host2",
+			ID:         "2",
+			Name:       "room2",
+			HostName:   "host2",
 			MinUserNum: 2,
 			MaxUserNum: 4,
-			UseCpu: false,
+			UseCpu:     false,
 		},
 	}
 
@@ -68,7 +67,7 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 	}
 
 	mockResponse := &schema.CreateRoomResponse{
-		RoomId: "1",
+		RoomID: "1",
 	}
 
 	return c.JSON(http.StatusOK, mockResponse)
@@ -85,9 +84,8 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 func (h *RoomHandler) Matching(c echo.Context) error {
 
 	mockResponse := &schema.MatchingResponse{
-		Id: "1",
+		ID: "1",
 	}
 
 	return c.JSON(http.StatusOK, mockResponse)
 }
-
