@@ -1,0 +1,68 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: typing100-db
+    hostname: typing100-db
+    expose:
+      - '3306'
+    ports:
+      - '3306:3306'
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - typing100-db-volume:/var/lib/postgresql/data:rw
+    networks:
+      - container-link
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          $DB_USER,
+          "-pmysql"
+        ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  server:
+    build:
+      dockerfile: ./build/Dockerfile.dev
+    container_name: typing100-server
+    hostname: typing100-server
+    ports:
+      - '8080:${PORT}'
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - container-link
+    restart: always
+
+  adminer:
+    image: adminer:latest
+    restart: always
+    ports:
+      - "8081:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  container-link:
+    name: typing100.network
+
+volumes:
+  typing100-db-volume:
+    name: typing100-db
+    driver: local
