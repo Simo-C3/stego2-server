@@ -16,20 +16,22 @@ func New() *Config {
 }
 
 type DBConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
+	Host                   string
+	Port                   string
+	User                   string
+	Password               string
+	DBName                 string
+	InstanceConnectionName string
 }
 
 func NewDBConfig() *DBConfig {
 	return &DBConfig{
-		Host:     loadEnv("DB_HOST", "localhost"),
-		Port:     loadEnv("DB_PORT", "3306"),
-		User:     loadEnv("DB_USER", "root"),
-		Password: loadEnv("DB_PASSWORD", "password"),
-		DBName:   loadEnv("DB_NAME", "main"),
+		Host:                   loadEnv("DB_HOST", "localhost"),
+		Port:                   loadEnv("DB_PORT", "3306"),
+		User:                   loadEnv("DB_USER", "root"),
+		Password:               loadEnv("DB_PASSWORD", "password"),
+		DBName:                 loadEnv("DB_NAME", "main"),
+		InstanceConnectionName: loadEnv("INSTANCE_CONNECTION_NAME", "default"),
 	}
 }
 
