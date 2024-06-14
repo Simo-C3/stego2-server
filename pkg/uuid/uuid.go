@@ -4,11 +4,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func GenerateUUIDv7() string {
+func GenerateUUIDv7() (string, error) {
 	uuid7, err := uuid.NewV7()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	return uuid7.String()
+	return uuid7.String(), nil
 }

@@ -29,9 +29,9 @@ func NewRoomHandler(wsHandler *WSHandler, roomRepo *repository.RoomRepository) *
 	}
 }
 
-func convertToCreateRoomRequestDomainModel(room *schema.CreateRoomRequest) *domain.Room {
+func convertToCreateRoomRequestDomainModel(room *schema.CreateRoomRequest, uuid string) *domain.Room {
 	return &domain.Room{
-		ID:         uuid.GenerateUUIDv7(),
+		ID:         uuid,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
@@ -72,15 +72,21 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 		return err
 	}
 
-	createRoomRequest := convertToCreateRoomRequestDomainModel(req)
-
-	roomRepo, err := h.repo.CreateRoom(c.Request().Context(), createRoomRequest)
+	uuid, err := uuid.GenerateUUIDv7()
 	if err != nil {
 		c.Logger().Error(err)
 		return err
 	}
 
-	return c.JSON(http.StatusOK, roomRepo)
+	createRoomRequest := convertToCreateRoomRequestDomainModel(req, uuid)
+
+	roomID, err := h.repo.CreateRoom(c.Request().Context(), createRoomRequest)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	return c.JSON(http.StatusOK, roomID)
 }
 
 func (h *RoomHandler) Matching(c echo.Context) error {
