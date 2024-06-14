@@ -14,14 +14,6 @@ func NewRoomHandler() *RoomHandler {
 	return &RoomHandler{}
 }
 
-// @Summary Get rooms
-// @Description Get rooms
-// @Tags rooms
-// @Accept json
-// @Produce json
-// @Success 200 {object} schema.GetRoomsResponse
-// @Failure 400 {object} schema.ErrResponse
-// @Router /rooms [get]
 func (h *RoomHandler) GetRooms(c echo.Context) error {
 	rooms := []*schema.Room{
 		{
@@ -50,15 +42,6 @@ func (h *RoomHandler) GetRooms(c echo.Context) error {
 	return c.JSON(http.StatusOK, mockResponse)
 }
 
-// @Summary Create room
-// @Description Create room
-// @Tags rooms
-// @Accept json
-// @Produce json
-// @Param request body schema.CreateRoomRequest true "Create room request"
-// @Success 200 {object} schema.CreateRoomResponse
-// @Failure 400 {object} schema.ErrResponse
-// @Router /rooms/{room_id} [post]
 func (h *RoomHandler) CreateRoom(c echo.Context) error {
 
 	req := new(schema.CreateRoomRequest)
@@ -73,14 +56,6 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 	return c.JSON(http.StatusOK, mockResponse)
 }
 
-// @Summary Room matching
-// @Description Room matching
-// @Tags rooms
-// @Accept json
-// @Produce json
-// @Success 200 {object} schema.MatchingResponse
-// @Failure 400 {object} schema.ErrResponse
-// @Router /rooms/matching [get]
 func (h *RoomHandler) Matching(c echo.Context) error {
 
 	mockResponse := &schema.MatchingResponse{
