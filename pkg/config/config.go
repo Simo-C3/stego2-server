@@ -1,36 +1,38 @@
 package config
 
-import "os"
+import (
+	"cmp"
+	"os"
+)
 
 type Config struct {
 	ServerPort string
-	IsLocal    bool
 }
 
 func New() *Config {
 	return &Config{
-		ServerPort: os.Getenv("PORT"),
-		IsLocal:    os.Getenv("IS_LOCAL") == "true",
+		ServerPort: loadEnv("PORT", "8080"),
 	}
 }
-
 
 type DBConfig struct {
 	Host     string
 	Port     string
 	User     string
 	Password string
-	Name     string
-	IsLocal  bool
+	DBName   string
 }
 
 func NewDBConfig() *DBConfig {
 	return &DBConfig{
-		Host:     os.Getenv("POSTGRES_HOST"),
-		Port:     os.Getenv("POSTGRES_PORT"),
-		User:     os.Getenv("POSTGRES_USER"),
-		Password: os.Getenv("POSTGRES_PASSWORD"),
-		Name:     os.Getenv("POSTGRES_DB"),
-		IsLocal:  os.Getenv("IS_LOCAL") == "true",
+		Host:     loadEnv("DB_HOST", "localhost"),
+		Port:     loadEnv("DB_PORT", "3306"),
+		User:     loadEnv("DB_USER", "root"),
+		Password: loadEnv("DB_PASSWORD", "password"),
+		DBName:   loadEnv("DB_NAME", "main"),
 	}
+}
+
+func loadEnv(env, def string) string {
+	return cmp.Or(os.Getenv(env), def)
 }
