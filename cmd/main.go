@@ -28,7 +28,9 @@ func main() {
 	g := e.Group("/api/v1")
 
 	// Init router
-	router.InitRoomRouter(g, *handler.NewRoomHandler())
+	wsHandler := handler.NewWSHandler()
+	roomHandler := handler.NewRoomHandler(wsHandler)
+	router.InitRoomRouter(g, roomHandler)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

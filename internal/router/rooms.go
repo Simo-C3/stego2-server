@@ -6,7 +6,7 @@ import (
 	"github.com/Simo-C3/stego2-server/internal/handler"
 )
 
-func InitRoomRouter(g *echo.Group, roomHandler handler.RoomHandler) {
+func InitRoomRouter(g *echo.Group, roomHandler *handler.RoomHandler) {
 	room := g.Group("/rooms")
 	room.GET("", roomHandler.GetRooms)
 	room.POST("", roomHandler.CreateRoom)
