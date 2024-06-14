@@ -13,7 +13,7 @@ services:
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_PASSWORD}
     volumes:
-      - typing100-db-volume:/var/lib/postgresql/data:rw
+      - typing100-db-volume:/var/lib/mysql:rw
     networks:
       - container-link
     restart: always
@@ -48,6 +48,17 @@ services:
     networks:
       - container-link
     restart: always
+  
+  redis:
+    image: "redis:latest"
+    container_name: typing100-redis
+    ports:
+      - "6379:${REDIS_PORT}"
+    networks:
+      - container-link
+    restart: always
+    volumes:
+     - typing100-redis-volume:/var/lib/redis/data:rw
 
 networks:
   container-link:
@@ -57,3 +68,7 @@ volumes:
   typing100-db-volume:
     name: typing100-db
     driver: local
+  typing100-redis-volume:
+    name: typing100-redis
+    driver: local
+

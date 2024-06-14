@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	ServerPort string
+	ENV        string
 }
 
 func New() *Config {
@@ -22,6 +23,7 @@ type DBConfig struct {
 	Password               string
 	DBName                 string
 	InstanceConnectionName string
+	Env                    string
 }
 
 func NewDBConfig() *DBConfig {
@@ -32,6 +34,19 @@ func NewDBConfig() *DBConfig {
 		Password:               loadEnv("DB_PASSWORD", "password"),
 		DBName:                 loadEnv("DB_NAME", "main"),
 		InstanceConnectionName: loadEnv("INSTANCE_CONNECTION_NAME", "default"),
+		Env:                    loadEnv("ENV", "development"),
+	}
+}
+
+type RedisConfig struct {
+	Host string
+	Port string
+}
+
+func NewRedisConfig() *RedisConfig {
+	return &RedisConfig{
+		Host: loadEnv("REDIS_HOST", "localhost"),
+		Port: loadEnv("REDIS_PORT", "6379"),
 	}
 }
 
