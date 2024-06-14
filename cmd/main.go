@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/Simo-C3/stego2-server/internal/handler"
+	"github.com/Simo-C3/stego2-server/internal/router"
 	"github.com/Simo-C3/stego2-server/pkg/config"
-	"github.com/Simo-C3/stego2-server/pkg/database"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -24,21 +24,14 @@ func main() {
 	}))
 
 	e.GET("/health", Health)
-	e.GET("/db-ping", func(c echo.Context) error {
-		cfg := config.NewDBConfig()
-		log.Println(cfg)
 
-		db, err := database.New(cfg)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
+	g:= e.Group("/api/v1")
 
-		if err := db.Ping(); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
+	// Init router
+	router.InitRoomRouter(g, *handler.NewRoomHandler())
 
-		return c.String(http.StatusOK, "DB is connected!!👍")
-	})
+
+
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
