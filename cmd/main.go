@@ -10,6 +10,7 @@ import (
 	"github.com/Simo-C3/stego2-server/internal/handler"
 	"github.com/Simo-C3/stego2-server/internal/router"
 	"github.com/Simo-C3/stego2-server/pkg/config"
+	"github.com/Simo-C3/stego2-server/pkg/redis"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -24,6 +25,21 @@ func main() {
 	}))
 
 	e.GET("/", Health)
+
+	// redis疎通確認用
+	// TODO: 後で消す
+	e.GET("/redis-ping", func(c echo.Context) error {
+		conf := config.NewRedisConfig()
+		rdb, err := redis.New(conf)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err)
+		}
+		resp, err := rdb.Ping(context.Background()).Result()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err)
+		}
+		return c.JSON(http.StatusOK, resp)
+	})
 
 	g := e.Group("/api/v1")
 
