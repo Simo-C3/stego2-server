@@ -3,7 +3,10 @@ package handler
 import (
 	"net/http"
 
+	"github.com/Simo-C3/stego2-server/internal/domain"
+	"github.com/Simo-C3/stego2-server/internal/repository"
 	"github.com/Simo-C3/stego2-server/internal/schema"
+	"github.com/Simo-C3/stego2-server/pkg/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
@@ -11,9 +14,10 @@ import (
 type RoomHandler struct {
 	upgrader  *websocket.Upgrader
 	wsHandler *WSHandler
+	repo      *repository.RoomRepository
 }
 
-func NewRoomHandler(wsHandler *WSHandler) *RoomHandler {
+func NewRoomHandler(wsHandler *WSHandler, roomRepo *repository.RoomRepository) *RoomHandler {
 	return &RoomHandler{
 		upgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -21,83 +25,78 @@ func NewRoomHandler(wsHandler *WSHandler) *RoomHandler {
 			},
 		},
 		wsHandler: wsHandler,
+		repo:      roomRepo,
 	}
 }
 
-// @Summary Get rooms
-// @Description Get rooms
-// @Tags rooms
-// @Accept json
-// @Produce json
-// @Success 200 {object} schema.GetRoomsResponse
-// @Failure 400 {object} schema.ErrResponse
-// @Router /rooms [get]
+func convertToCreateRoomRequestDomainModel(room *schema.CreateRoomRequest, uuid string) *domain.Room {
+	return &domain.Room{
+		ID:         uuid,
+		Name:       room.Name,
+		HostName:   room.HostName,
+		MinUserNum: room.MinUserNum,
+		MaxUserNum: room.MaxUserNum,
+		UseCpu:     room.UseCpu,
+	}
+}
+
+func convertToSchemaRoom(room *domain.Room) *schema.Room {
+	return &schema.Room{
+		ID:         room.ID,
+		Name:       room.Name,
+		HostName:   room.HostName,
+		MinUserNum: room.MinUserNum,
+		MaxUserNum: room.MaxUserNum,
+		UseCpu:     room.UseCpu,
+	}
+}
+
 func (h *RoomHandler) GetRooms(c echo.Context) error {
-	rooms := []*schema.Room{
-		{
-			ID:         "1",
-			Name:       "room1",
-			HostName:   "host1",
-			MinUserNum: 1,
-			MaxUserNum: 4,
-			UseCpu:     true,
-		},
-		{
-			ID:         "2",
-			Name:       "room2",
-			HostName:   "host2",
-			MinUserNum: 2,
-			MaxUserNum: 4,
-			UseCpu:     false,
-		},
+	rooms, err := h.repo.GetRooms(c.Request().Context())
+	if err != nil {
+		c.Logger().Error(err)
+		return err
 	}
 
-	mockResponse := &schema.GetRoomsResponse{
-		Rooms: rooms,
-		Total: 2,
+	res := make([]*schema.Room, 0, len(rooms))
+	for _, room := range rooms {
+		res = append(res, convertToSchemaRoom(room))
 	}
 
-	return c.JSON(http.StatusOK, mockResponse)
+	return c.JSON(http.StatusOK, res)
 }
 
-// @Summary Create room
-// @Description Create room
-// @Tags rooms
-// @Accept json
-// @Produce json
-// @Param request body schema.CreateRoomRequest true "Create room request"
-// @Success 200 {object} schema.CreateRoomResponse
-// @Failure 400 {object} schema.ErrResponse
-// @Router /rooms/{room_id} [post]
 func (h *RoomHandler) CreateRoom(c echo.Context) error {
-
 	req := new(schema.CreateRoomRequest)
 	if err := c.Bind(req); err != nil {
 		return err
 	}
 
-	mockResponse := &schema.CreateRoomResponse{
-		RoomID: "1",
+	uuid, err := uuid.GenerateUUIDv7()
+	if err != nil {
+		c.Logger().Error(err)
+		return err
 	}
 
-	return c.JSON(http.StatusOK, mockResponse)
+	createRoomRequest := convertToCreateRoomRequestDomainModel(req, uuid)
+
+	roomID, err := h.repo.CreateRoom(c.Request().Context(), createRoomRequest)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	return c.JSON(http.StatusOK, roomID)
 }
 
-// @Summary Room matching
-// @Description Room matching
-// @Tags rooms
-// @Accept json
-// @Produce json
-// @Success 200 {object} schema.MatchingResponse
-// @Failure 400 {object} schema.ErrResponse
-// @Router /rooms/matching [get]
 func (h *RoomHandler) Matching(c echo.Context) error {
-
-	mockResponse := &schema.MatchingResponse{
-		ID: "1",
+	roomID, err := h.repo.Matching(c.Request().Context())
+	if err != nil {
+		c.Logger().Error(err)
+		return err
 	}
 
-	return c.JSON(http.StatusOK, mockResponse)
+	return c.JSON(http.StatusOK, roomID)
 }
 
 func (h *RoomHandler) JoinRoom(c echo.Context) error {
