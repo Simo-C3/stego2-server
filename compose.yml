@@ -49,15 +49,6 @@ services:
       - container-link
     restart: always
 
-  adminer:
-    image: adminer:latest
-    restart: always
-    ports:
-      - "8081:8080"
-    depends_on:
-      db:
-        condition: service_healthy
-
 networks:
   container-link:
     name: typing100.network
