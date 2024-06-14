@@ -10,6 +10,7 @@ import (
 	"github.com/Simo-C3/stego2-server/internal/handler"
 	"github.com/Simo-C3/stego2-server/internal/router"
 	"github.com/Simo-C3/stego2-server/pkg/config"
+	"github.com/Simo-C3/stego2-server/pkg/database"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -23,7 +24,20 @@ func main() {
 		Format: "${time_rfc3339} ${method} ${uri} ${status}\n",
 	}))
 
-	e.GET("/health", Health)
+	e.GET("/", Health)
+
+	e.GET("/db-ping", func(c echo.Context) error {
+		conf := config.NewDBConfig()
+		db, err := database.New(conf)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err)
+		}
+		if err := db.Ping(); err != nil {
+			return c.JSON(http.StatusInternalServerError, err)
+		}
+
+		return c.JSON(http.StatusOK, "DB is connected!!👍")
+	})
 
 	g := e.Group("/api/v1")
 
