@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16.3-alpine
+    container_name: typing100-db
+    hostname: typing100-db
+    expose:
+      - '5432'
+    ports:
+      - '5432:5432'
+    env_file:
+      - .env
+    volumes:
+      - typing100-db-volume:/var/lib/postgresql/data:rw
+    networks:
+      - container-link
+    restart: always
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U" , $POSTGRES_USER, "-d", $POSTGRES_DB]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  server:
+    build:
+      dockerfile: ./build/Dockerfile.dev
+    container_name: typing100-server
+    hostname: typing100-server
+    ports:
+      - '8080:${PORT}'
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - container-link
+    restart: always
+
+  adminer:
+    image: adminer:latest
+    restart: always
+    ports:
+      - "8081:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  container-link:
+    name: typing100.network
+
+volumes:
+  typing100-db-volume:
+    name: typing100-db
+    driver: local
