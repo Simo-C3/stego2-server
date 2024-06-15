@@ -119,16 +119,16 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 		fmt.Println("roomID: ", roomID)
 		payload := payloadSlice[1]
 		fmt.Println("payload: ", payload)
-		game, err := gm.repo.GetGameByID(ctx, roomID)
-		if err != nil {
-			continue
-		}
-		userIDs := make([]string, 0, len(game.Users))
-		for _, user := range game.Users {
-			userIDs = append(userIDs, user.ID)
-		}
+		// game, err := gm.repo.GetGameByID(ctx, roomID)
+		// if err != nil {
+		// 	continue
+		// }
+		// userIDs := make([]string, 0, len(game.Users))
+		// for _, user := range game.Users {
+		// 	userIDs = append(userIDs, user.ID)
+		// }
 		// dummy IDs
-		// userIDs := []string{"dummyUserID"}
+		userIDs := []string{"dummyUserID"}
 		gm.msg.Broadcast(ctx, userIDs, payload)
 	}
 }
