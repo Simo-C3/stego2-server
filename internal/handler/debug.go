@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/Simo-C3/stego2-server/internal/domain/service"
 	"github.com/Simo-C3/stego2-server/pkg/config"
 	"github.com/Simo-C3/stego2-server/pkg/database"
 	"github.com/Simo-C3/stego2-server/pkg/redis"
@@ -10,10 +11,13 @@ import (
 )
 
 type DebugHandler struct {
+	pub service.Publisher
 }
 
-func NewDebugHandler() *DebugHandler {
-	return &DebugHandler{}
+func NewDebugHandler(pub service.Publisher) *DebugHandler {
+	return &DebugHandler{
+		pub: pub,
+	}
 }
 
 func (h *DebugHandler) HealthCheck(c echo.Context) error {
@@ -48,4 +52,13 @@ func (h *DebugHandler) PingRedis(c echo.Context) error {
 	}
 
 	return c.String(http.StatusOK, "Redis Connection OK!")
+}
+
+func (h *DebugHandler) Publish(c echo.Context) error {
+	ctx := c.Request().Context()
+	if err := h.pub.Publish(ctx, "game", "Hello, World!"); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.String(http.StatusOK, "Message Published!")
 }
