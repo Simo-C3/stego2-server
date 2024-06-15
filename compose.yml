@@ -35,11 +35,9 @@ services:
 
   server:
     build:
-      dockerfile: ./build/Dockerfile.dev
+      dockerfile: ./build/Dockerfile
     container_name: typing100-server
     hostname: typing100-server
-    volumes:
-      - .:/app
     ports:
       - '8080:${PORT}'
     volumes:
