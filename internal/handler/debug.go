@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/service"
@@ -54,9 +56,33 @@ func (h *DebugHandler) PingRedis(c echo.Context) error {
 	return c.String(http.StatusOK, "Redis Connection OK!")
 }
 
+type Event struct {
+	Key     string `json:"key"`
+	Payload struct {
+		Name       string `json:"name"`
+		HostName   string `json:"hostName"`
+		MinUserNum int    `json:"minUserNum"`
+		MaxUserNum int    `json:"maxUserNum"`
+		UseCPU     bool   `json:"useCpu"`
+		Status     string `json:"status"`
+	} `json:"payload"`
+}
+
 func (h *DebugHandler) Publish(c echo.Context) error {
 	ctx := c.Request().Context()
-	if err := h.pub.Publish(ctx, "game", "01901ab9-2181-7b0a-9d9a-56e9afd418d4,Hello Tosaken!"); err != nil {
+	var req Event
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	b, err := json.Marshal(req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	body := fmt.Sprintf("%s,%s", "01901ab9-2181-7b0a-9d9a-56e9afd418d4", string(b))
+
+	if err := h.pub.Publish(ctx, "game", body); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
