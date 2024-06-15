@@ -3,7 +3,8 @@ package infra
 import (
 	"context"
 	"database/sql"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
@@ -29,14 +30,6 @@ func NewProblemRepository(db *database.DB) repository.ProblemRepository {
 	}
 }
 
-// func convertToProblemModel(problem *model.Problem) *ProblemModel {
-// 	return &ProblemModel{
-// 		ID:              problem.ID,
-// 		CollectSentence: problem.CollectSentence,
-// 		Level:           problem.Level,
-// 	}
-// }
-
 func convertToDomainProblem(problem *ProblemModel) *model.Problem {
 	return &model.Problem{
 		ID:              problem.ID,
@@ -60,7 +53,7 @@ func (p *problemRepository) GetProblems(ctx context.Context, level, limit int) (
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	res := make([]*model.Problem, 0, len(problems))

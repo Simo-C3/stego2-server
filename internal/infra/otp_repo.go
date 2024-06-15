@@ -5,6 +5,7 @@ import (
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
+	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -21,12 +22,11 @@ func NewOTPRepository(redis *redis.Client) repository.OTPRepository {
 func (r *OTPRepository) GenerateOTP(ctx context.Context, userID, name string) (*model.OTP, error) {
 	otp, err := model.NewOTP()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	err = r.redis.Set(ctx, otp.OTP, userID+";"+name, 0).Err()
-	if err != nil {
-		return nil, err
+	if err = r.redis.Set(ctx, otp.OTP, userID+";"+name, 0).Err(); err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	return otp, nil
@@ -35,11 +35,11 @@ func (r *OTPRepository) GenerateOTP(ctx context.Context, userID, name string) (*
 func (r *OTPRepository) VerifyOTP(ctx context.Context, otp string) (string, error) {
 	res, err := r.redis.Get(ctx, otp).Result()
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	if err := r.redis.Del(ctx, otp).Err(); err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	return res, nil

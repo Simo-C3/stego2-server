@@ -3,7 +3,8 @@ package infra
 import (
 	"context"
 	"database/sql"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
@@ -62,9 +63,8 @@ func convertToDBModel(room *model.Room) *RoomModel {
 
 func (r *roomRepository) GetRooms(ctx context.Context) ([]*model.Room, error) {
 	var roomModels []*RoomModel
-	err := r.db.NewSelect().Model(&roomModels).Scan(ctx)
-	if err != nil {
-		return nil, err
+	if err := r.db.NewSelect().Model(&roomModels).Scan(ctx); err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	rooms := make([]*model.Room, 0, len(roomModels))
@@ -77,9 +77,8 @@ func (r *roomRepository) GetRooms(ctx context.Context) ([]*model.Room, error) {
 
 func (r *roomRepository) CreateRoom(ctx context.Context, room *model.Room) (string, error) {
 	roomModel := convertToDBModel(room)
-	_, err := r.db.NewInsert().Model(roomModel).Exec(ctx)
-	if err != nil {
-		return "", err
+	if _, err := r.db.NewInsert().Model(roomModel).Exec(ctx); err != nil {
+		return "", errors.WithStack(err)
 	}
 
 	return roomModel.ID, nil
@@ -95,7 +94,7 @@ func (r *roomRepository) Matching(ctx context.Context) (string, error) {
 	}
 
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	return randomRoom.ID, nil
@@ -105,7 +104,7 @@ func (r *roomRepository) GetRoomByID(ctx context.Context, roomID string) (*model
 	var roomModel RoomModel
 	err := r.db.NewSelect().Model(&roomModel).Where("id = ?", roomID).Scan(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertToDomainModel(&roomModel), nil
@@ -114,5 +113,5 @@ func (r *roomRepository) GetRoomByID(ctx context.Context, roomID string) (*model
 func (r *roomRepository) UpdateRoom(ctx context.Context, room *model.Room) error {
 	roomModel := convertToDBModel(room)
 	_, err := r.db.NewUpdate().Model(roomModel).WherePK().Exec(ctx)
-	return err
+	return errors.WithStack(err)
 }
