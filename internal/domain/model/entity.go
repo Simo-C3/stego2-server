@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/Simo-C3/stego2-server/pkg/otp"
+	"github.com/pkg/errors"
 )
 
 type Room struct {
@@ -17,9 +18,14 @@ type Room struct {
 	Status     string
 }
 
+type Sequence struct {
+	Value string
+	Level int
+}
+
 type Game struct {
 	ID        string
-	Sequences []string
+	Sequences []*Sequence
 	Users     map[string]*User
 	Status    GameStatus
 	BaseRoom  *Room
@@ -30,11 +36,17 @@ type User struct {
 	ID          string
 	DisplayName string
 	Life        int
-	Sequences   []string
+	Sequences   []*Sequence
 	Pos         int
 	Streak      int
 	DeadAt      int
 	Difficult   int
+}
+
+type Problem struct {
+	ID              int
+	CollectSentence string
+	Level           int
 }
 
 type OTP struct {
@@ -74,6 +86,14 @@ func NewOTP() (*OTP, error) {
 	}, nil
 }
 
+func NewProblem(id int, collectSentence string, level int) *Problem {
+	return &Problem{
+		ID:              id,
+		CollectSentence: collectSentence,
+		Level:           level,
+	}
+}
+
 func (g *Game) AddUser(user *User) error {
 	if len(g.Users) >= g.BaseRoom.MaxUserNum {
 		return ErrMaxUserNum
@@ -87,14 +107,23 @@ func (g *Game) AddUser(user *User) error {
 	return nil
 }
 
-func (g *Game) GetRanking() []*User {
-	users := make([]*User, 0, len(g.Users))
+func (g *Game) GetRanking(userID string) (int, error) {
+	deadUsers := make([]*User, 0, len(g.Users))
 	for _, user := range g.Users {
-		users = append(users, user)
+		if user.Life <= 0 {
+			deadUsers = append(deadUsers, user)
+		}
 	}
-	sort.Slice(users, func(i, j int) bool {
-		return users[i].Life > users[j].Life
+
+	sort.Slice(deadUsers, func(i, j int) bool {
+		return deadUsers[i].DeadAt < deadUsers[j].DeadAt
 	})
-	// sort by life desc
-	return nil
+
+	for rank, user := range deadUsers {
+		if user.ID == userID {
+			return rank + 1, nil
+		}
+	}
+
+	return -1, errors.New("user not found")
 }

@@ -47,3 +47,7 @@ type ChangeRoomState struct {
 	StartedAt int64  `json:"startedAt"`
 	OwnerID   string `json:"ownerId"`
 }
+
+type RankResult struct {
+	Rank int `json:"rank"`
+}

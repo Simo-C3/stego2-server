@@ -2,7 +2,6 @@ package infra
 
 import (
 	"context"
-	"strings"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
@@ -10,12 +9,12 @@ import (
 )
 
 type userModel struct {
-	ID        string `redis:"id"`
-	Name      string `redis:"name"`
-	Life      int    `redis:"life"`
-	Sequences string `redis:"sequences"`
-	DeadAt    int    `redis:"dead_at"`
-	Difficult int    `redis:"difficult"`
+	ID        string         `redis:"id"`
+	Name      string         `redis:"name"`
+	Life      int            `redis:"life"`
+	Sequences map[string]int `redis:"sequences"`
+	DeadAt    int            `redis:"dead_at"`
+	Difficult int            `redis:"difficult"`
 }
 
 const RedisGameKey string = "game"
@@ -52,11 +51,21 @@ func (g *gameRepository) GetUserByID(ctx context.Context, id string) (*model.Use
 		return nil, err
 	}
 
+	sequences := make([]*model.Sequence, 0, len(u.Sequences))
+
+	for seq, level := range u.Sequences {
+		sequences = append(sequences, &model.Sequence{
+			Value: seq,
+			Level: level,
+		})
+
+	}
+
 	user := &model.User{
 		ID:          u.ID,
 		DisplayName: u.Name,
 		Life:        u.Life,
-		Sequences:   strings.Split(u.Sequences, ";"),
+		Sequences:   sequences,
 		DeadAt:      u.DeadAt,
 		Difficult:   u.Difficult,
 	}
@@ -65,9 +74,9 @@ func (g *gameRepository) GetUserByID(ctx context.Context, id string) (*model.Use
 }
 
 func (g *gameRepository) UpdateUser(ctx context.Context, user *model.User) error {
-	var sequences string = user.Sequences[0]
-	for _, seq := range user.Sequences[1:] {
-		sequences += ";" + string(seq)
+	sequences := make(map[string]int)
+	for _, seq := range user.Sequences {
+		sequences[seq.Value] = seq.Level
 	}
 
 	u := &userModel{
