@@ -87,7 +87,7 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, roomID)
+	return c.JSON(http.StatusOK, schema.CreateRoomResponse{RoomID: roomID})
 }
 
 func (h *RoomHandler) Matching(c echo.Context) error {
@@ -101,7 +101,7 @@ func (h *RoomHandler) Matching(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, "no room found")
 	}
 
-	return c.JSON(http.StatusOK, roomID)
+	return c.JSON(http.StatusOK, schema.MatchingResponse{ID: roomID})
 }
 
 func (h *RoomHandler) JoinRoom(c echo.Context) error {
