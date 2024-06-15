@@ -70,6 +70,7 @@ type Event struct {
 
 func (h *DebugHandler) Publish(c echo.Context) error {
 	ctx := c.Request().Context()
+	id := c.QueryParam("room")
 	var req Event
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -80,7 +81,7 @@ func (h *DebugHandler) Publish(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	body := fmt.Sprintf("%s,%s", "01901ab9-2181-7b0a-9d9a-56e9afd418d4", string(b))
+	body := fmt.Sprintf("%s,%s", id, string(b))
 
 	if err := h.pub.Publish(ctx, "game", body); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
