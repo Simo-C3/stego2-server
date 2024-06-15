@@ -51,6 +51,7 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 
 	if game.BaseRoom.UseCPU {
 		go gm.StartBot(ctx, roomID, game.BaseRoom.MaxUserNum-len(game.Users))
+		time.Sleep(1 * time.Second)
 	}
 
 	game.Status = model.GameStatusPlaying
