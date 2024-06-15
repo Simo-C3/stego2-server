@@ -268,6 +268,13 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 					return err
 				}
+
+				for _, user := range game.Users {
+					gm.repo.DeleteUser(ctx, user.ID)
+				}
+				gm.repo.DeleteGame(ctx, roomID)
+
+				return nil
 			}
 		}
 	}
@@ -301,7 +308,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			Type: schema.TypeNextSeq,
 			Payload: &schema.NextSeqEvent{
 				Value: nextSeq.Value,
-				Ruby:  "",
+				Level: nextSeq.Level,
 				Type:  "default",
 			},
 		},
@@ -330,7 +337,7 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 			UserNum:   len(game.Users),
 			Status:    model.RoomStatusPending,
 			StartedAt: nil,
-			OwnerID:   userID,
+			OwnerID:   game.BaseRoom.OwnerID,
 		},
 	}
 
@@ -366,6 +373,17 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 	}
 
 	if err = gm.repo.UpdateUser(ctx, user); err != nil {
+		return err
+	}
+
+	if err = gm.msg.Send(ctx, userID, &schema.Base{
+		Type: schema.TypeNextSeq,
+		Payload: schema.NextSeqEvent{
+			Value: user.Sequences[0].Value,
+			Type:  "default",
+			Level: user.Sequences[0].Level,
+		},
+	}); err != nil {
 		return err
 	}
 

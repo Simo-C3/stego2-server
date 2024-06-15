@@ -70,3 +70,15 @@ func (g *gameRepository) UpdateUser(ctx context.Context, user *model.User) error
 
 	return g.redis.Set(ctx, user.ID, data, 30*time.Minute).Err()
 }
+
+// DeleteGame implements repository.GameRepository.
+func (g *gameRepository) DeleteGame(ctx context.Context, id string) error {
+	g.redis.Del(ctx, id).Err()
+
+	return nil
+}
+
+// DeleteUser implements repository.GameRepository.
+func (g *gameRepository) DeleteUser(ctx context.Context, id string) error {
+	return g.redis.Del(ctx, id).Err()
+}
