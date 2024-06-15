@@ -24,12 +24,11 @@ type Sequence struct {
 }
 
 type Game struct {
-	ID        string
-	Sequences []*Sequence
-	Users     map[string]*User
-	Status    GameStatus
-	BaseRoom  *Room
-	StartAt   int
+	ID       string
+	Users    map[string]*User
+	Status   GameStatus
+	BaseRoom *Room
+	StartAt  int
 }
 
 type User struct {
@@ -68,10 +67,9 @@ func NewRoom(id, ownerID, name, hostName string, minUserNum, maxUserNum int, use
 
 func NewGame(id string, status GameStatus) *Game {
 	return &Game{
-		ID:        id,
-		Sequences: []string{},
-		Users:     map[string]*User{},
-		Status:    status,
+		ID:     id,
+		Users:  map[string]*User{},
+		Status: status,
 	}
 }
 
