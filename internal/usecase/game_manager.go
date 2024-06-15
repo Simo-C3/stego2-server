@@ -83,9 +83,28 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		if err != nil {
 			return err
 		}
-		attackedUser.Difficult += user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10)))
+
+		// 攻撃力を計算
+		damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10)))
+		attackedUser.Difficult += damage
 		err = gm.repo.UpdateUser(ctx, attackedUser)
 		if err != nil {
+			return err
+		}
+		// Publish: AttackEvent
+		publishContent := &schema.PublishContent{
+			RoomID: roomID,
+			Payload: &schema.AttackEvent{
+				From:   userID,
+				To:     attackedUser.ID,
+				Damage: damage,
+			},
+		}
+		publishJSON, err := json.Marshal(publishContent)
+		if err != nil {
+			return err
+		}
+		if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 			return err
 		}
 		return nil
@@ -98,15 +117,31 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			if err != nil {
 				return err
 			}
-			// 順位を返す && 2位まで決まったら終了
+			// 順位を計算
 			rank, err := game.GetRanking(userID)
 			if err != nil {
 				return err
 			}
-			result := &schema.RankResult{
-				Rank: rank,
+
+			// Publish: ChangeOtherUserState
+			publishContent := &schema.PublishContent{
+				RoomID: roomID,
+				Payload: &schema.ChangeOtherUserState{
+					ID:       user.ID,
+					Name:     user.DisplayName,
+					Life:     user.Life,
+					Seq:      user.Sequences[0].Value,
+					InputSeq: user.Sequences[0].Value[:user.Pos],
+					Rank:     rank,
+				},
 			}
-			gm.msg.Send(ctx, userID, result)
+			publishJSON, err := json.Marshal(publishContent)
+			if err != nil {
+				return err
+			}
+			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+				return err
+			}
 			// 2位まで決まったら終了
 			if rank == 2 {
 				game.Status = model.GameStatusFinished
@@ -128,7 +163,9 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 					return err
 				}
 				// publish
-				gm.pub.Publish(ctx, "game", publishJSON)
+				if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+					return err
+				}
 				return nil
 			}
 		}
