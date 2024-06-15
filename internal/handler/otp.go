@@ -12,11 +12,13 @@ import (
 
 type OTPHandler struct {
 	repo repository.OTPRepository
+	auth middleware.AuthController
 }
 
-func NewOTPHandler(otpRepo repository.OTPRepository) *OTPHandler {
+func NewOTPHandler(otpRepo repository.OTPRepository, auth middleware.AuthController) *OTPHandler {
 	return &OTPHandler{
 		repo: otpRepo,
+		auth: auth,
 	}
 }
 
@@ -28,12 +30,13 @@ func convertToSchemaOTP(otp *model.OTP) *schema.OTP {
 
 func (h *OTPHandler) GenerateOTP(c echo.Context) error {
 	userID, err := middleware.GetUserID(c)
+	user, err := h.auth.GetUser(c)
 	if err != nil {
 		c.Logger().Error(err)
 		return err
 	}
 
-	otp, err := h.repo.GenerateOTP(c.Request().Context(), userID)
+	otp, err := h.repo.GenerateOTP(c.Request().Context(), userID, user.DisplayName)
 	if err != nil {
 		c.Logger().Error(err)
 		return err

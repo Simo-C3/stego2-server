@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
@@ -126,11 +127,14 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	userID, err := h.otpRepo.VerifyOTP(ctx, req.Otp)
+	u, err := h.otpRepo.VerifyOTP(ctx, req.Otp)
 	if err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid otp")
 	}
+	us := strings.SplitN(u, ";", 2)
+	userID := us[0]
+	displayName := us[1]
 
 	game, err := h.gameRepo.GetGameByID(ctx, req.ID)
 	if err != nil {
@@ -151,7 +155,7 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 		}
 	}
 
-	user := model.NewUser(userID, "dummyDisplayName")
+	user := model.NewUser(userID, displayName)
 	if err := game.AddUser(user); err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusForbidden, "failed to add user")

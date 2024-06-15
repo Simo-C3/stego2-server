@@ -7,6 +7,6 @@ import (
 )
 
 type OTPRepository interface {
-	GenerateOTP(ctx context.Context, userID string) (*model.OTP, error)
+	GenerateOTP(ctx context.Context, userID, name string) (*model.OTP, error)
 	VerifyOTP(ctx context.Context, otp string) (string, error)
 }
