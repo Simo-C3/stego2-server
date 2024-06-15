@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
@@ -159,18 +157,9 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "failed to add user")
 	}
 
-	fmt.Printf("game: %+v\n", game)
-
 	if err := h.gameRepo.UpdateGame(ctx, game); err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update game")
-	}
-
-	if game, err := h.gameRepo.GetGameByID(ctx, req.ID); err != nil {
-		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get game")
-	} else {
-		log.Println(game)
 	}
 
 	// Upgrade to websocket

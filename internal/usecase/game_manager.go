@@ -225,10 +225,11 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		level = 10
 	}
 	// 次の問題を取得
-	problem, err := gm.problem.GetProblems(ctx, level)
+	problems, err := gm.problem.GetProblems(ctx, level, 1)
 	if err != nil {
 		return err
 	}
+	problem := problems[0]
 	nextSeq := &model.Sequence{
 		Value: problem.CollectSentence,
 		Level: problem.Level,
@@ -255,18 +256,43 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 }
 
 func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
+	game, err := gm.repo.GetGameByID(ctx, roomID)
+	if err != nil {
+		return err
+	}
+
 	event := &schema.ChangeRoomState{
 		Type: schema.TypeChangeRoom,
 		Payload: schema.ChangeRoomStatePayload{
-			UserNum:   1,
+			UserNum:   len(game.Users),
 			Status:    model.RoomStatusMatched,
 			StartedAt: time.Now().Add(30 * time.Second).Unix(),
 			OwnerID:   userID,
 		},
 	}
 
-	err := gm.msg.Send(ctx, userID, event)
+	if err := gm.msg.Send(ctx, userID, event); err != nil {
+		return err
+	}
+
+	user, err := gm.repo.GetUserByID(ctx, userID)
 	if err != nil {
+		return err
+	}
+
+	problems, err := gm.problem.GetProblems(ctx, 1, 2)
+	if err != nil {
+		return err
+	}
+
+	for _, problem := range problems {
+		user.Sequences = append(user.Sequences, &model.Sequence{
+			Value: problem.CollectSentence,
+			Level: problem.Level,
+		})
+	}
+
+	if err = gm.repo.UpdateUser(ctx, user); err != nil {
 		return err
 	}
 
