@@ -29,14 +29,15 @@ func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository) *R
 	}
 }
 
-func convertToCreateRoomRequestDomainModel(room *schema.CreateRoomRequest, uuid string) *domain.Room {
-	return &domain.Room{
+func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string) *model.Room {
+	return &model.Room{
 		ID:         uuid,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
-		UseCpu:     room.UseCpu,
+		UseCPU:     room.UseCPU,
+		Status:     "pending",
 	}
 }
 
@@ -47,7 +48,7 @@ func convertToSchemaRoom(room *model.Room) *schema.Room {
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
-		UseCpu:     room.UseCpu,
+		UseCPU:     room.UseCPU,
 	}
 }
 

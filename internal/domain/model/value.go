@@ -10,6 +10,13 @@ const (
 	GameStatusFinished GameStatus = "finished"
 )
 
+const (
+	RoomStatusPending = "pending"
+	RoomStatusMatched = "matched"
+	RoomStatusPlaying = "playing"
+	RoomStatusFinish  = "finish"
+)
+
 func NewGameStatus(status string) GameStatus {
 	switch status {
 	case "pending":
