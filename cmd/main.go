@@ -59,6 +59,7 @@ func main() {
 	roomRepository := infra.NewRoomRepository(db)
 	gameRepository := infra.NewGameRepository(redis)
 	otpRepository := infra.NewOTPRepository(redis)
+	problemRepository := infra.NewProblemRepository(db)
 	publisher := infra.NewPublisher(redis)
 	subscriber := infra.NewSubscriber(redis)
 	msgSender := infra.NewMsgSender()
@@ -78,7 +79,7 @@ func main() {
 	}
 
 	// Init router
-	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, msgSender)
+	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, problemRepository, msgSender)
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository, otpRepository, gameRepository)
 	otpHandler := handler.NewOTPHandler(otpRepository)

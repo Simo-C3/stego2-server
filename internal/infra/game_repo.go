@@ -10,6 +10,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const RedisGameKey string = "game"
+
 type gameRepository struct {
 	redis *redis.Client
 }
