@@ -32,7 +32,7 @@ func NewGameManager(pub service.Publisher, sub service.Subscriber, repo reposito
 	}
 }
 
-func (gm *GameManager) StartGame(ctx context.Context, roomID string) error {
+func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID string) error {
 	game, err := gm.repo.GetGameByID(ctx, roomID)
 	if err != nil {
 		return err
@@ -41,6 +41,11 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string) error {
 	if game.ID == "" {
 		fmt.Println("game is nil")
 		return err
+	}
+
+	if game.BaseRoom.OwnerID != userID {
+		fmt.Println("not owner")
+		return fmt.Errorf("you are not owner")
 	}
 
 	game.Status = model.GameStatusPlaying
