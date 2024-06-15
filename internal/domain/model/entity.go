@@ -119,6 +119,16 @@ func NewProblem(id int, collectSentence string, level int) *Problem {
 
 func (g *Game) AddUser(user *User) error {
 	if g.Status != GameStatusPending {
+		if func() bool {
+			for _, u := range g.Users {
+				if u.ID == user.ID {
+					return true
+				}
+			}
+			return false
+		}() {
+			return nil
+		}
 		return ErrGameIsStarted
 	}
 
