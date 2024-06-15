@@ -156,6 +156,11 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	}
 
 	user := model.NewUser(userID, displayName)
+	if err := h.gameRepo.UpdateUser(ctx, user); err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user")
+	}
+
 	if err := game.AddUser(user); err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusForbidden, "failed to add user")
