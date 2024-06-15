@@ -64,7 +64,7 @@ func main() {
 	msgSender := infra.NewMsgSender()
 
 	// Init router
-	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, problemRepository, msgSender)
+	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, roomRepository, problemRepository, msgSender)
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository, otpRepository, gameRepository)
 	otpHandler := handler.NewOTPHandler(otpRepository, authMiddleware)
