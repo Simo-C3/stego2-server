@@ -143,8 +143,24 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		if err != nil {
 			return err
 		}
-		// Publish: AttackEvent
+		// Publish: ChangeWordDifficult
 		publishContent := &schema.PublishContent{
+			RoomID: roomID,
+			Payload: &schema.ChangeWordDifficult{
+				Difficult: attackedUser.Difficult,
+				Cause:     "damage",
+			},
+			IncludeUsers: []string{attackedUser.ID},
+		}
+		publishJSON, err := json.Marshal(publishContent)
+		if err != nil {
+			return err
+		}
+		if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+			return err
+		}
+		// Publish: AttackEvent
+		publishContent = &schema.PublishContent{
 			RoomID: roomID,
 			Payload: &schema.AttackEvent{
 				From:   userID,
@@ -152,7 +168,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				Damage: damage,
 			},
 		}
-		publishJSON, err := json.Marshal(publishContent)
+		publishJSON, err = json.Marshal(publishContent)
 		if err != nil {
 			return err
 		}
