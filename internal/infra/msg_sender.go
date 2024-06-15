@@ -63,6 +63,26 @@ func (s *MsgSender) Send(ctx context.Context, to string, data interface{}) error
 	}
 }
 
+func (s *MsgSender) Broadcast(ctx context.Context, ids []string, data interface{}) error {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	for _, id := range ids {
+		client, ok := s.clients[id]
+		if !ok {
+			continue
+		}
+
+		select {
+		case client.ch <- data:
+		case <-time.After(writeWait):
+			return errors.New("websocket write timeout")
+		}
+
+	}
+	return nil
+}
+
 func (s *MsgSender) Register(userID string, conn *websocket.Conn, err chan error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
