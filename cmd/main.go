@@ -67,7 +67,7 @@ func main() {
 	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, problemRepository, msgSender)
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository, otpRepository, gameRepository)
-	otpHandler := handler.NewOTPHandler(otpRepository)
+	otpHandler := handler.NewOTPHandler(otpRepository, authMiddleware)
 
 	// debug handler
 	debugHandler := handler.NewDebugHandler(publisher)
