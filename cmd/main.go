@@ -36,21 +36,6 @@ func main() {
 
 	e.GET("/", Health)
 
-	// redis疎通確認用
-	// TODO: 後で消す
-	e.GET("/redis-ping", func(c echo.Context) error {
-		conf := config.NewRedisConfig()
-		rdb, err := redis.New(conf)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
-		}
-		resp, err := rdb.Ping(context.Background()).Result()
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
-		}
-		return c.JSON(http.StatusOK, resp)
-	})
-
 	g := e.Group("/api/v1")
 
 	db, err := database.New(dbCfg)
