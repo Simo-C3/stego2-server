@@ -389,10 +389,10 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 	}
 
 	cosp := &schema.Base{
-		Type: schema.TypeChangeRoom,
+		Type: schema.TypeChangeOtherUserState,
 		Payload: schema.ChangeOtherUserState{
 			ID:       userID,
-			Name:     userID,
+			Name:     user.DisplayName,
 			Life:     model.InitUserLife,
 			Seq:      user.Sequences[0].Value,
 			InputSeq: "",
