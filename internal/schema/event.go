@@ -47,6 +47,11 @@ type ChangeRoomState struct {
 	Payload ChangeRoomStatePayload `json:"payload"`
 }
 
+type ChangeWordDifficult struct {
+	Difficult int    `json:"difficult"`
+	Cause     string `json:"cause"`
+}
+
 type ChangeRoomStatePayload struct {
 	UserNum    int    `json:"userNum"`
 	Status     string `json:"status"`
