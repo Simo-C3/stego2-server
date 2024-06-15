@@ -9,13 +9,15 @@ import (
 
 type GameManager struct {
 	pub  service.Publisher
+	sub  service.Subscriber
 	repo repository.GameRepository
 	msg  service.MessageSender
 }
 
-func NewGameManager(pub service.Publisher, repo repository.GameRepository, msg service.MessageSender) *GameManager {
+func NewGameManager(pub service.Publisher, sub service.Subscriber, repo repository.GameRepository, msg service.MessageSender) *GameManager {
 	return &GameManager{
 		pub:  pub,
+		sub:  sub,
 		repo: repo,
 		msg:  msg,
 	}
@@ -81,4 +83,24 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	}
 
 	return nil
+}
+
+func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
+	ch := gm.sub.Subscribe(ctx, topic)
+	for msg := range ch {
+		if len(msg.PayloadSlice) != 2 {
+			continue
+		}
+		roomID := msg.PayloadSlice[0]
+		payload := msg.PayloadSlice[1]
+		game, err := gm.repo.GetGameByID(ctx, roomID)
+		if err != nil {
+			continue
+		}
+		userIDs := make([]string, 0, len(game.Users))
+		for _, user := range game.Users {
+			userIDs = append(userIDs, user.ID)
+		}
+		gm.msg.Broadcast(ctx, userIDs, []byte(payload))
+	}
 }

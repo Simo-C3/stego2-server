@@ -92,3 +92,7 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 		}
 	}
 }
+
+func (h *WSHandler) SubscribeHandle(ctx context.Context, topic string) {
+	h.gm.SubscribeMessage(ctx, topic)
+}
