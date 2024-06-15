@@ -362,7 +362,7 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 		Type: schema.TypeChangeRoom,
 		Payload: schema.ChangeRoomStatePayload{
 			UserNum:   len(game.Users),
-			Status:    model.RoomStatusPending,
+			Status:    game.Status.String(),
 			StartedAt: nil,
 			OwnerID:   game.BaseRoom.OwnerID,
 		},
