@@ -11,4 +11,6 @@ type GameRepository interface {
 	GetUserByID(ctx context.Context, id string) (*model.User, error)
 	UpdateGame(ctx context.Context, game *model.Game) error
 	UpdateUser(ctx context.Context, user *model.User) error
+	DeleteGame(ctx context.Context, id string) error
+	DeleteUser(ctx context.Context, id string) error
 }

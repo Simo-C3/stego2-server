@@ -252,6 +252,12 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 					return err
 				}
+
+				for _, user := range game.Users {
+					gm.repo.DeleteUser(ctx, user.ID)
+				}
+				gm.repo.DeleteGame(ctx, roomID)
+
 				return nil
 			}
 		}
