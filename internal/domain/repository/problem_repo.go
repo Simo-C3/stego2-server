@@ -7,5 +7,5 @@ import (
 )
 
 type ProblemRepository interface {
-	GetProblems(ctx context.Context, level int) (*model.Problem, error)
+	GetProblems(ctx context.Context, level, limit int) ([]*model.Problem, error)
 }

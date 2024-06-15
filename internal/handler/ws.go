@@ -31,6 +31,8 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 	h.msgSender.Register(userID, ws, errCh)
 	defer h.msgSender.Unregister(userID)
 
+	h.gm.Join(ctx, roomID, userID)
+
 	for {
 		_, p, err := ws.ReadMessage()
 		if err != nil {
