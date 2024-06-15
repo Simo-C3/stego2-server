@@ -47,7 +47,7 @@ func convertToDomainProblem(problem *ProblemModel) *model.Problem {
 
 // GetProblems implements repository.ProblemRepository.
 func (p *problemRepository) GetProblems(ctx context.Context, level, limit int) ([]*model.Problem, error) {
-	problems := make([]ProblemModel, 0, 2)
+	problems := make([]ProblemModel, 0, limit)
 	query := p.db.NewSelect().
 		Model(&problems).
 		Where("level BETWEEN ? AND ?", level-1, level+1).
@@ -63,9 +63,9 @@ func (p *problemRepository) GetProblems(ctx context.Context, level, limit int) (
 		return nil, err
 	}
 
-	res := []*model.Problem{
-		convertToDomainProblem(&problems[0]),
-		convertToDomainProblem(&problems[1]),
+	res := make([]*model.Problem, 0, len(problems))
+	for _, problem := range problems {
+		res = append(res, convertToDomainProblem(&problem))
 	}
 
 	return res, nil
