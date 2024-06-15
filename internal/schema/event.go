@@ -26,8 +26,8 @@ type AttackEvent struct {
 
 type NextSeqEvent struct {
 	Value string `json:"value"`
-	Ruby  string `json:"ruby"`
 	Type  string `json:"type"`
+	Level int    `json:"level"`
 }
 
 type FinCurrentSeq struct {
