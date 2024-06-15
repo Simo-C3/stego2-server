@@ -8,6 +8,7 @@ const (
 	TypeNextSeq       Type = "NextSeq"
 	TypeAttack        Type = "Attack"
 	TypeChangeRoom    Type = "ChangeRoomState"
+	TypeStartGame     Type = "StartGame"
 )
 
 type Base struct {
@@ -42,10 +43,16 @@ type TypingKey struct {
 }
 
 type ChangeRoomState struct {
-	UserNum   int    `json:"userNum"`
-	Status    string `json:"status"`
-	StartedAt int64  `json:"startedAt"`
-	OwnerID   string `json:"ownerId"`
+	Type    Type                   `json:"type"`
+	Payload ChangeRoomStatePayload `json:"payload"`
+}
+
+type ChangeRoomStatePayload struct {
+	UserNum    int    `json:"userNum"`
+	Status     string `json:"status"`
+	StartedAt  int64  `json:"startedAt"`
+	StartDelay int    `json:"startDelay"`
+	OwnerID    string `json:"ownerId"`
 }
 
 type RankResult struct {

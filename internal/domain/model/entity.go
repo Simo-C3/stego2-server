@@ -1,6 +1,8 @@
 package model
 
 import (
+	"bytes"
+	"encoding/gob"
 	"sort"
 
 	"github.com/Simo-C3/stego2-server/pkg/otp"
@@ -29,6 +31,19 @@ type Game struct {
 	Status   GameStatus
 	BaseRoom *Room
 	StartAt  int
+}
+
+func (g *Game) MarshalBinary() ([]byte, error) {
+	var b bytes.Buffer
+	enc := gob.NewEncoder(&b)
+	err := enc.Encode(g)
+	return b.Bytes(), err
+}
+
+func (g *Game) UnmarshalBinary(data []byte) error {
+	b := bytes.NewBuffer(data)
+	dec := gob.NewDecoder(b)
+	return dec.Decode(g)
 }
 
 type User struct {
@@ -65,11 +80,12 @@ func NewRoom(id, ownerID, name, hostName string, minUserNum, maxUserNum int, use
 	}
 }
 
-func NewGame(id string, status GameStatus) *Game {
+func NewGame(id string, status GameStatus, room *Room) *Game {
 	return &Game{
-		ID:     id,
-		Users:  map[string]*User{},
-		Status: status,
+		ID:       id,
+		Users:    map[string]*User{},
+		Status:   status,
+		BaseRoom: room,
 	}
 }
 

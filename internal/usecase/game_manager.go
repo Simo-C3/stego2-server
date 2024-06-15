@@ -32,6 +32,51 @@ func NewGameManager(pub service.Publisher, sub service.Subscriber, repo reposito
 	}
 }
 
+func (gm *GameManager) StartGame(ctx context.Context, roomID string) error {
+	game, err := gm.repo.GetGameByID(ctx, roomID)
+	if err != nil {
+		return err
+	}
+
+	if game.ID == "" {
+		fmt.Println("game is nil")
+		return err
+	}
+
+	game.Status = model.GameStatusPlaying
+
+	err = gm.repo.UpdateGame(ctx, game)
+	if err != nil {
+		return err
+	}
+
+	pm := &schema.PublishContent{
+		RoomID: roomID,
+		Payload: schema.ChangeRoomState{
+			Type: schema.TypeStartGame,
+			Payload: schema.ChangeRoomStatePayload{
+				UserNum:    len(game.Users),
+				Status:     game.Status.String(),
+				StartedAt:  time.Now().Unix(),
+				StartDelay: model.GameStartDelay,
+				OwnerID:    game.BaseRoom.OwnerID,
+			},
+		},
+	}
+
+	pj, err := json.Marshal(pm)
+	if err != nil {
+		return err
+	}
+
+	err = gm.pub.Publish(ctx, "game", pj)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key rune) error {
 	user, err := gm.repo.GetUserByID(ctx, userID)
 	if err != nil {
@@ -119,7 +164,10 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				p := &schema.PublishContent{
 					RoomID: roomID,
 					Payload: &schema.ChangeRoomState{
-						Status: "finish",
+						Type: schema.TypeChangeRoom,
+						Payload: schema.ChangeRoomStatePayload{
+							Status: "finish",
+						},
 					},
 				}
 
@@ -170,9 +218,9 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 }
 
 func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
-	event := &schema.Base{
+	event := &schema.ChangeRoomState{
 		Type: schema.TypeChangeRoom,
-		Payload: schema.ChangeRoomState{
+		Payload: schema.ChangeRoomStatePayload{
 			UserNum:   1,
 			Status:    model.RoomStatusMatched,
 			StartedAt: time.Now().Add(30 * time.Second).Unix(),
@@ -202,16 +250,14 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 
 		fmt.Println("roomID: ", content.RoomID)
 		fmt.Println("payload: ", content.Payload)
-		// game, err := gm.repo.GetGameByID(ctx, roomID)
-		// if err != nil {
-		// 	continue
-		// }
-		// userIDs := make([]string, 0, len(game.Users))
-		// for _, user := range game.Users {
-		// 	userIDs = append(userIDs, user.ID)
-		// }
-		// dummy IDs
-		userIDs := []string{"dummyUserID"}
+		game, err := gm.repo.GetGameByID(ctx, content.RoomID)
+		if err != nil {
+			continue
+		}
+		userIDs := make([]string, 0, len(game.Users))
+		for _, user := range game.Users {
+			userIDs = append(userIDs, user.ID)
+		}
 		gm.msg.Broadcast(ctx, userIDs, content.Payload)
 	}
 }

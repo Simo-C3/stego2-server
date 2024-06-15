@@ -18,6 +18,8 @@ const (
 	RoomStatusFinish  = "finish"
 )
 
+const GameStartDelay = 5 // sec
+
 func NewGameStatus(status string) GameStatus {
 	switch status {
 	case "pending":
