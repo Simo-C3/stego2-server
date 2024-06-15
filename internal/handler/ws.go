@@ -53,7 +53,7 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 				log.Println(err)
 				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			}
-			if err := h.gm.TypeKey(ctx, roomID, userID, req.Payload.Key); err != nil {
+			if err := h.gm.TypeKey(ctx, roomID, userID, req.Payload.InputSeq); err != nil {
 				log.Println(err)
 				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			}
