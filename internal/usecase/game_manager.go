@@ -282,7 +282,12 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 		Payload: event,
 	}
 
-	if err := gm.pub.Publish(ctx, "game", ev); err != nil {
+	marshaledEvent, err := json.Marshal(ev)
+	if err != nil {
+		return err
+	}
+
+	if err := gm.pub.Publish(ctx, "game", marshaledEvent); err != nil {
 		return err
 	}
 
