@@ -6,6 +6,8 @@ const (
 	TypeFinCurrentSeq Type = "FinCurrentSeq"
 	TypeTypingKey     Type = "TypingKey"
 	TypeNextSeq       Type = "NextSeq"
+	TypeAttack        Type = "Attack"
+	TypeChangeRoom    Type = "ChangeRoomState"
 )
 
 type Base struct {
@@ -40,9 +42,8 @@ type TypingKey struct {
 }
 
 type ChangeRoomState struct {
-	Type      Type `json:"type"`
-	UserNum   int
-	Status    string
-	StartedAt int64
-	OwnerID   string
+	UserNum   int    `json:"userNum"`
+	Status    string `json:"status"`
+	StartedAt int64  `json:"startedAt"`
+	OwnerID   string `json:"ownerId"`
 }

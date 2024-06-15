@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
 	"github.com/Simo-C3/stego2-server/internal/domain/service"
+	"github.com/Simo-C3/stego2-server/internal/schema"
 )
 
 type GameManager struct {
@@ -88,12 +91,17 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 }
 
 func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
-	err := gm.msg.Send(ctx, userID, map[string]interface{}{
-		"type": "Join",
-		"payload": map[string]interface{}{
-			"roomID": roomID,
+	event := &schema.Base{
+		Type: schema.TypeChangeRoom,
+		Payload: schema.ChangeRoomState{
+			UserNum:   1,
+			Status:    model.RoomStatusMatched,
+			StartedAt: time.Now().Add(30 * time.Second).Unix(),
+			OwnerID:   userID,
 		},
-	})
+	}
+
+	err := gm.msg.Send(ctx, userID, event)
 	if err != nil {
 		return err
 	}
