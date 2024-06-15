@@ -179,7 +179,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		}
 
 		// 攻撃力を計算
-		damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10)))
+		damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10))) * 50
 		attackedUser.Difficult += damage
 		err = gm.repo.UpdateUser(ctx, attackedUser)
 		if err != nil {
@@ -230,6 +230,12 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			user.DeadAt = int(time.Now().Unix())
 			err := gm.repo.UpdateUser(ctx, user)
 			if err != nil {
+				return err
+			}
+			// gameのusersも更新
+			// TODO: 排他制御
+			game.Users[userID] = user
+			if err = gm.repo.UpdateGame(ctx, game); err != nil {
 				return err
 			}
 			// 順位を計算
@@ -323,8 +329,13 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	}
 	user.Sequences = append(user.Sequences[1:], nextSeq)
 	user.Pos = 0
-
 	if err := gm.repo.UpdateUser(ctx, user); err != nil {
+		return err
+	}
+	// gameのusersも更新
+	// TODO: 排他制御
+	game.Users[userID] = user
+	if err = gm.repo.UpdateGame(ctx, game); err != nil {
 		return err
 	}
 
