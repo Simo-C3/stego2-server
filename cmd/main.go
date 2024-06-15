@@ -35,7 +35,9 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.Recover())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "${time_rfc3339} ${method} ${uri} ${status}\n",
+		Skipper: func(c echo.Context) bool {
+			return c.Path() == "/"
+		},
 	}))
 	e.Use(middleware.CORS())
 
