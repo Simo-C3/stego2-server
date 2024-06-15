@@ -403,6 +403,13 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 		return err
 	}
 
+	// gameのusersも更新
+	// TODO: 排他制御
+	game.Users[userID] = user
+	if err = gm.repo.UpdateGame(ctx, game); err != nil {
+		return err
+	}
+
 	// if err = gm.msg.Send(ctx, userID, &schema.Base{
 	// 	Type: schema.TypeNextSeq,
 	// 	Payload: schema.NextSeqEvent{
