@@ -2,6 +2,8 @@ package infra
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
@@ -18,6 +20,7 @@ type RoomModel struct {
 	MinUserNum int    `bun:"min_user_num"`
 	MaxUserNum int    `bun:"max_user_num"`
 	UseCPU     bool   `bun:"use_cpu"`
+	Status     string `bun:"status"`
 }
 
 type roomRepository struct {
@@ -38,6 +41,7 @@ func convertToDomainModel(room *RoomModel) *model.Room {
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCPU:     room.UseCPU,
+		Status:     room.Status,
 	}
 }
 
@@ -79,8 +83,13 @@ func (r *roomRepository) CreateRoom(ctx context.Context, room *model.Room) (stri
 
 func (r *roomRepository) Matching(ctx context.Context) (string, error) {
 	var randomRoom RoomModel
-	query := r.db.NewSelect().Model(&randomRoom).OrderExpr("RAND()").Limit(1)
+	query := r.db.NewSelect().Model(&randomRoom).Where("status = ?", "pending").OrderExpr("RAND()").Limit(1)
 	err := query.Scan(ctx)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+
 	if err != nil {
 		return "", err
 	}
