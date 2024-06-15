@@ -7,6 +7,8 @@ import (
 	"math"
 	"math/rand"
 	"slices"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -45,6 +47,10 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 
 	if game.BaseRoom.OwnerID != userID {
 		return errors.New("you are not owner")
+	}
+
+	if game.BaseRoom.UseCPU {
+		gm.StartBot(ctx, roomID, game.BaseRoom.MaxUserNum-len(game.Users))
 	}
 
 	game.Status = model.GameStatusPlaying
@@ -479,4 +485,42 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 			log.Println("failed to broadcast message:", err)
 		}
 	}
+}
+
+func (gm *GameManager) StartBot(ctx context.Context, roomID string, num int) {
+
+	wg := &sync.WaitGroup{}
+
+	for range num {
+		wg.Add(1)
+		go func() {
+			r := rand.Int()
+			user := model.NewUser(strconv.Itoa(r), "Bot")
+			game, _ := gm.repo.GetGameByID(ctx, roomID)
+			game.AddUser(user)
+			gm.repo.UpdateGame(ctx, game)
+			gm.repo.UpdateUser(ctx, user)
+
+			gm.Join(ctx, roomID, user.ID)
+			ticker := time.NewTicker(300 * time.Second)
+
+			cnt := 0
+
+			select {
+			case <-ticker.C:
+				cnt++
+				gm.TypeKey(ctx, roomID, user.ID, "a")
+				if cnt%10 == 0 {
+					gm.FinCurrentSeq(ctx, roomID, user.ID, "succeeded")
+				}
+
+			case <-ctx.Done():
+				break
+			}
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }
