@@ -286,6 +286,30 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 					return err
 				}
 
+				// Publish: Result
+				rs, err := game.GetResult()
+				if err != nil {
+					return err
+				}
+				results := make([]*schema.Result, 0, len(rs))
+				for _, r := range rs {
+					results = append(results, schema.NewResult(r.UserID, r.Rank, r.DisplayName))
+				}
+				publishContent := &schema.PublishContent{
+					RoomID: roomID,
+					Payload: schema.Base{
+						Type:    schema.TypeResult,
+						Payload: results,
+					},
+				}
+				publishJSON, err := json.Marshal(publishContent)
+				if err != nil {
+					return err
+				}
+				if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+					return err
+				}
+
 				// publish content
 				p := &schema.PublishContent{
 					RoomID: roomID,
@@ -301,7 +325,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 					},
 				}
 
-				publishJSON, err := json.Marshal(p)
+				publishJSON, err = json.Marshal(p)
 				if err != nil {
 					return err
 				}
@@ -318,6 +342,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				if err := gm.repo.DeleteGame(ctx, roomID); err != nil {
 					return err
 				}
+
 				return nil
 			}
 			return nil

@@ -12,6 +12,7 @@ const (
 	TypeChangeOtherUsersState Type = "ChangeOtherUsersState"
 	TypeStartGame             Type = "StartGame"
 	TypeChangeWordDifficult   Type = "ChangeWordDifficult"
+	TypeResult                Type = "Result"
 )
 
 type Base struct {
@@ -70,4 +71,18 @@ type ChangeOtherUserState struct {
 	Seq      string `json:"seq"`
 	InputSeq string `json:"inputSeq"`
 	Rank     int    `json:"rank"`
+}
+
+type Result struct {
+	UserID      string `json:"userId"`
+	Rank        int    `json:"rank"`
+	DisplayName string `json:"displayName"`
+}
+
+func NewResult(userID string, rank int, displayName string) *Result {
+	return &Result{
+		UserID:      userID,
+		Rank:        rank,
+		DisplayName: displayName,
+	}
 }
