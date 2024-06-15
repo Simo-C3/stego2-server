@@ -154,6 +154,9 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	if err != nil {
 		return err
 	}
+	if user.Life <= 0 {
+		return nil
+	}
 
 	game, err := gm.repo.GetGameByID(ctx, roomID)
 	if err != nil {
