@@ -305,7 +305,7 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 			UserNum:   len(game.Users),
 			Status:    model.RoomStatusPending,
 			StartedAt: nil,
-			OwnerID:   userID,
+			OwnerID:   game.BaseRoom.OwnerID,
 		},
 	}
 
