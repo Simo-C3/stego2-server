@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/Simo-C3/stego2-server/internal/handler"
-	"github.com/Simo-C3/stego2-server/internal/repository"
+	"github.com/Simo-C3/stego2-server/internal/infra"
 	"github.com/Simo-C3/stego2-server/internal/router"
+	"github.com/Simo-C3/stego2-server/internal/usecase"
 	"github.com/Simo-C3/stego2-server/pkg/config"
 	"github.com/Simo-C3/stego2-server/pkg/database"
 	myMiddleware "github.com/Simo-C3/stego2-server/pkg/middleware"
@@ -57,14 +58,26 @@ func main() {
 	}
 	defer db.Close()
 
-	roomRepository := repository.NewRoomRepository(db)
+	rdsCfg := config.NewRedisConfig()
+	redis, err := redis.New(rdsCfg)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
 
-	wsHandler := handler.NewWSHandler()
+	roomRepository := infra.NewRoomRepository(db)
+	gameRepository := infra.NewGameRepository(redis)
+	publisher := infra.NewPublisher(redis)
+	msgSender := infra.NewMsgSender()
+
+	// Init router
+	gm := usecase.NewGameManager(publisher, gameRepository, msgSender)
+	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository)
 
 	// Init router
 	router.InitRoomRouter(g, roomHandler, authMiddleware)
 
+	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	// Start server
