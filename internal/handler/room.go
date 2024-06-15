@@ -48,6 +48,7 @@ func convertToSchemaRoom(room *model.Room) *schema.Room {
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCPU:     room.UseCPU,
+		Status:     room.Status,
 	}
 }
 
@@ -94,6 +95,10 @@ func (h *RoomHandler) Matching(c echo.Context) error {
 	if err != nil {
 		c.Logger().Error(err)
 		return err
+	}
+
+	if roomID == "" {
+		return c.JSON(http.StatusNotFound, "no room found")
 	}
 
 	return c.JSON(http.StatusOK, roomID)
