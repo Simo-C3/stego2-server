@@ -8,9 +8,9 @@ import (
 )
 
 func InitRoomRouter(g *echo.Group, roomHandler *handler.RoomHandler, am myMiddleware.AuthController) {
-	room := g.Group("/rooms", am.WithHeader)
-	room.GET("", roomHandler.GetRooms)
-	room.POST("", roomHandler.CreateRoom)
-	room.GET("/matching", roomHandler.Matching)
+	room := g.Group("/rooms")
+	room.GET("", roomHandler.GetRooms, am.WithHeader)
+	room.POST("", roomHandler.CreateRoom, am.WithHeader)
+	room.GET("/matching", roomHandler.Matching, am.WithHeader)
 	room.GET("/:id", roomHandler.JoinRoom)
 }
