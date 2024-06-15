@@ -61,6 +61,12 @@ func main() {
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository)
 
+	// debug handler
+	debugHandler := handler.NewDebugHandler(publisher)
+
+	// debug publisher
+	e.GET("/debug/publish", debugHandler.Publish)
+
 	// start subscriber
 	go wsHandler.SubscribeHandle(context.Background(), "game")
 
