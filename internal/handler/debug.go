@@ -2,10 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/service"
+	"github.com/Simo-C3/stego2-server/internal/schema"
 	"github.com/Simo-C3/stego2-server/pkg/config"
 	"github.com/Simo-C3/stego2-server/pkg/database"
 	"github.com/Simo-C3/stego2-server/pkg/redis"
@@ -76,14 +76,17 @@ func (h *DebugHandler) Publish(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	b, err := json.Marshal(req)
+	p := &schema.PublishContent{
+		RoomID:  id,
+		Payload: req,
+	}
+
+	publishJSON, err := json.Marshal(p)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	body := fmt.Sprintf("%s,%s", id, string(b))
-
-	if err := h.pub.Publish(ctx, "game", body); err != nil {
+	if err := h.pub.Publish(ctx, "game", publishJSON); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
