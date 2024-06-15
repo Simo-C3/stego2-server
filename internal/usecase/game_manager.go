@@ -87,6 +87,20 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	return nil
 }
 
+func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
+	err := gm.msg.Send(ctx, userID, map[string]interface{}{
+		"type": "Join",
+		"payload": map[string]interface{}{
+			"roomID": roomID,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 	ch := gm.sub.Subscribe(ctx, topic)
 	for msg := range ch {
