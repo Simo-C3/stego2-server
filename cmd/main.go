@@ -65,7 +65,7 @@ func main() {
 	debugHandler := handler.NewDebugHandler(publisher)
 
 	// debug publisher
-	e.GET("/debug/publish", debugHandler.Publish)
+	e.POST("/debug/publish", debugHandler.Publish)
 
 	// start subscriber
 	go wsHandler.SubscribeHandle(context.Background(), "game")
