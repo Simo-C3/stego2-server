@@ -115,6 +115,6 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 		// }
 		// dummy IDs
 		userIDs := []string{"dummyUserID"}
-		gm.msg.Broadcast(ctx, userIDs, payload)
+		gm.msg.Broadcast(ctx, userIDs, []byte(payload))
 	}
 }
