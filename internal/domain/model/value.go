@@ -2,6 +2,7 @@ package model
 
 import "errors"
 
+type RoomStatus string
 type GameStatus string
 
 const (

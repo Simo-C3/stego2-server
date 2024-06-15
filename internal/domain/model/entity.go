@@ -1,6 +1,8 @@
 package model
 
-import "sort"
+import (
+	"sort"
+)
 
 type Room struct {
 	ID         string

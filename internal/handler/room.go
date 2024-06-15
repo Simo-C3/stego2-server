@@ -37,7 +37,6 @@ func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string) *mod
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCPU:     room.UseCPU,
-		Status:     "pending",
 	}
 }
 
