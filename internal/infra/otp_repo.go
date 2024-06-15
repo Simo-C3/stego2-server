@@ -31,16 +31,15 @@ func (r *OTPRepository) GenerateOTP(ctx context.Context, userID string) (*model.
 	return otp, nil
 }
 
-func (r *OTPRepository) VerifyOTP(ctx context.Context, otp string) error {
-	err := r.redis.Get(ctx, otp).Err()
+func (r *OTPRepository) VerifyOTP(ctx context.Context, otp string) (string, error) {
+	res, err := r.redis.Get(ctx, otp).Result()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	err = r.redis.Del(ctx, otp).Err()
-	if err != nil {
-		return err
+	if err := r.redis.Del(ctx, otp).Err(); err != nil {
+		return "", err
 	}
 
-	return nil
+	return res, nil
 }

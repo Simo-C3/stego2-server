@@ -54,6 +54,15 @@ func NewRoom(id, ownerID, name, hostName string, minUserNum, maxUserNum int, use
 	}
 }
 
+func NewGame(id string, status GameStatus) *Game {
+	return &Game{
+		ID:        id,
+		Sequences: []string{},
+		Users:     map[string]*User{},
+		Status:    status,
+	}
+}
+
 func NewUser(id, displayName string) *User {
 	return &User{
 		ID:          id,
@@ -75,10 +84,6 @@ func NewOTP() (*OTP, error) {
 }
 
 func (g *Game) AddUser(user *User) error {
-	if len(g.Users) >= g.BaseRoom.MaxUserNum {
-		return ErrMaxUserNum
-	}
-
 	if g.Status != GameStatusPending {
 		return ErrGameIsStarted
 	}
