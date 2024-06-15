@@ -6,35 +6,10 @@ import (
 	"log"
 
 	"github.com/Simo-C3/stego2-server/internal/infra"
+	"github.com/Simo-C3/stego2-server/internal/schema"
 	"github.com/Simo-C3/stego2-server/internal/usecase"
 	"github.com/gorilla/websocket"
 )
-
-type Type string
-
-const (
-	TypeFinCurrentSeq Type = "FinCurrentSeq"
-	TypeTypingKey     Type = "TypingKey"
-)
-
-type Base struct {
-	Type    Type        `json:"type"`
-	Payload interface{} `json:"payload"`
-}
-
-type FinCurrentSeq struct {
-	Type    Type `json:"type"`
-	Payload struct {
-		Cause string `json:"cause"`
-	} `json:"payload"`
-}
-
-type TypingKey struct {
-	Type    Type `json:"type"`
-	Payload struct {
-		Key rune `json:"inputKey"`
-	} `json:"payload"`
-}
 
 type WSHandler struct {
 	gm        *usecase.GameManager
@@ -62,15 +37,15 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 			break
 		}
 
-		var msg Base
+		var msg schema.Base
 		if err := json.Unmarshal(p, &msg); err != nil {
 			log.Println(err)
 			break
 		}
 
 		switch msg.Type {
-		case TypeTypingKey:
-			var req TypingKey
+		case schema.TypeTypingKey:
+			var req schema.TypingKey
 			if err := json.Unmarshal(p, &req); err != nil {
 				log.Println(err)
 				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
@@ -79,8 +54,8 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 				log.Println(err)
 				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			}
-		case TypeFinCurrentSeq:
-			var req FinCurrentSeq
+		case schema.TypeFinCurrentSeq:
+			var req schema.FinCurrentSeq
 			if err := json.Unmarshal(p, &req); err != nil {
 				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			}
