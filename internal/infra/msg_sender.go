@@ -39,7 +39,9 @@ type MsgSender struct {
 	clients map[string]*Client
 }
 
-func NewMsgSender() service.MessageSender {
+var _ service.MessageSender = (*MsgSender)(nil)
+
+func NewMsgSender() *MsgSender {
 	return &MsgSender{
 		mutex:   new(sync.RWMutex),
 		clients: make(map[string]*Client),
