@@ -422,16 +422,12 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 	ch := gm.sub.Subscribe(ctx, topic)
 	for msg := range ch {
 		// format: roomID,payload
-		log.Println("lets go!")
-		log.Println("payload: ", msg.Payload)
 		var content schema.PublishContent
 		if err := json.Unmarshal([]byte(msg.Payload), &content); err != nil {
 			log.Println("failed to unmarshal message:", err)
 			continue
 		}
 
-		log.Println("roomID: ", content.RoomID)
-		log.Println("payload: ", content.Payload)
 		game, err := gm.repo.GetGameByID(ctx, content.RoomID)
 		if err != nil {
 			continue
