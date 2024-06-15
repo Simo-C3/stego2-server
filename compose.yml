@@ -40,6 +40,8 @@ services:
     hostname: typing100-server
     ports:
       - '8080:${PORT}'
+    volumes:
+      - .:/app
     env_file:
       - .env
     depends_on:
