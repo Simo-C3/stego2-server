@@ -23,6 +23,7 @@ type Room struct {
 type Sequence struct {
 	Value string
 	Level int
+	Type  string
 }
 
 type Game struct {
