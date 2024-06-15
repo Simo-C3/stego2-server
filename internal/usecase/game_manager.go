@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
@@ -334,9 +335,22 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 			continue
 		}
 		userIDs := make([]string, 0, len(game.Users))
+
+		includeUsers := content.IncludeUsers
+		excludeUsers := content.ExcludeUsers
+
 		for _, user := range game.Users {
+			if slices.Contains(excludeUsers, user.ID) {
+				continue
+			}
+
+			if len(includeUsers) > 0 && !slices.Contains(includeUsers, user.ID) {
+				continue
+			}
+
 			userIDs = append(userIDs, user.ID)
 		}
+
 		gm.msg.Broadcast(ctx, userIDs, content.Payload)
 	}
 }
