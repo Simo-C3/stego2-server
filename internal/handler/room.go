@@ -129,7 +129,6 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	ctx := c.Request().Context()
 	u, err := h.otpRepo.VerifyOTP(ctx, req.Otp)
 	if err != nil {
-		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid otp")
 	}
 	us := strings.SplitN(u, ";", 2)
