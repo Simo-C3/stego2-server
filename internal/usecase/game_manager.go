@@ -84,24 +84,30 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 	return nil
 }
 
-func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key rune) error {
+func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key string) error {
 	user, err := gm.repo.GetUserByID(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	currentSeq := user.Sequences[0]
-	currentChar := currentSeq.Value[user.Pos]
-
-	isCorrect := rune(currentChar) == key
-	if isCorrect {
-		user.Pos++
-		user.Streak++
-	} else {
-		user.Streak = 0
+	publishContent := &schema.PublishContent{
+		RoomID: gameID,
+		Payload: &schema.ChangeOtherUserState{
+			ID:       user.ID,
+			Name:     user.DisplayName,
+			Life:     user.Life,
+			Seq:      user.Sequences[0].Value,
+			InputSeq: key,
+			Rank:     0,
+		},
+		ExcludeUsers: []string{userID},
+	}
+	publishJSON, err := json.Marshal(publishContent)
+	if err != nil {
+		return err
 	}
 
-	if err := gm.repo.UpdateUser(ctx, user); err != nil {
+	if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 		return err
 	}
 

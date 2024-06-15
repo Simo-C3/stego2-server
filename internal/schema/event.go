@@ -38,7 +38,7 @@ type FinCurrentSeq struct {
 type TypingKey struct {
 	Type    Type `json:"type"`
 	Payload struct {
-		Key rune `json:"inputKey"`
+		InputSeq string `json:"inputSeq"`
 	} `json:"payload"`
 }
 
