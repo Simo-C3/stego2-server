@@ -3,6 +3,7 @@ package schema
 type (
 	Room struct {
 		ID         string `json:"id"`
+		OwnerID    string `json:"ownerId"`
 		Name       string `json:"name"`
 		HostName   string `json:"hostName"`
 		MinUserNum int    `json:"minUserNum"`

@@ -53,12 +53,22 @@ func main() {
 	roomRepository := infra.NewRoomRepository(db)
 	gameRepository := infra.NewGameRepository(redis)
 	publisher := infra.NewPublisher(redis)
+	subscriber := infra.NewSubscriber(redis)
 	msgSender := infra.NewMsgSender()
 
 	// Init router
-	gm := usecase.NewGameManager(publisher, gameRepository, msgSender)
+	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, msgSender)
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository)
+
+	// debug handler
+	debugHandler := handler.NewDebugHandler(publisher)
+
+	// debug publisher
+	e.GET("/debug/publish", debugHandler.Publish)
+
+	// start subscriber
+	go wsHandler.SubscribeHandle(context.Background(), "game")
 
 	// Init router
 	router.InitRoomRouter(g, roomHandler, authMiddleware)

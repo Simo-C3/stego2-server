@@ -6,6 +6,7 @@ import (
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
 	"github.com/Simo-C3/stego2-server/internal/schema"
+	"github.com/Simo-C3/stego2-server/pkg/middleware"
 	"github.com/Simo-C3/stego2-server/pkg/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -29,9 +30,10 @@ func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository) *R
 	}
 }
 
-func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string) *model.Room {
+func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string, ownerID string) *model.Room {
 	return &model.Room{
 		ID:         uuid,
+		OwnerID:    ownerID,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
@@ -43,11 +45,13 @@ func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string) *mod
 func convertToSchemaRoom(room *model.Room) *schema.Room {
 	return &schema.Room{
 		ID:         room.ID,
+		OwnerID:    room.OwnerID,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCPU:     room.UseCPU,
+		Status:     room.Status,
 	}
 }
 
@@ -78,7 +82,13 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 		return err
 	}
 
-	createRoomRequest := convertToCreateRoomEntity(req, uuid)
+	ownerID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	createRoomRequest := convertToCreateRoomEntity(req, uuid, ownerID)
 
 	roomID, err := h.repo.CreateRoom(c.Request().Context(), createRoomRequest)
 	if err != nil {
@@ -86,7 +96,7 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, roomID)
+	return c.JSON(http.StatusOK, schema.CreateRoomResponse{RoomID: roomID})
 }
 
 func (h *RoomHandler) Matching(c echo.Context) error {
@@ -96,7 +106,11 @@ func (h *RoomHandler) Matching(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, roomID)
+	if roomID == "" {
+		return c.JSON(http.StatusNotFound, "no room found")
+	}
+
+	return c.JSON(http.StatusOK, schema.MatchingResponse{ID: roomID})
 }
 
 func (h *RoomHandler) JoinRoom(c echo.Context) error {
