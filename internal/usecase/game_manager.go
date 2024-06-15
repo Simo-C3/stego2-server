@@ -55,6 +55,7 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 		return err
 	}
 
+	start := time.Now().Add(30 * time.Second).Unix()
 	pm := &schema.PublishContent{
 		RoomID: roomID,
 		Payload: schema.ChangeRoomState{
@@ -62,7 +63,7 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 			Payload: schema.ChangeRoomStatePayload{
 				UserNum:    len(game.Users),
 				Status:     game.Status.String(),
-				StartedAt:  time.Now().Unix(),
+				StartedAt:  &start,
 				StartDelay: model.GameStartDelay,
 				OwnerID:    game.BaseRoom.OwnerID,
 			},
@@ -270,13 +271,18 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 		Type: schema.TypeChangeRoom,
 		Payload: schema.ChangeRoomStatePayload{
 			UserNum:   len(game.Users),
-			Status:    model.RoomStatusMatched,
-			StartedAt: time.Now().Add(30 * time.Second).Unix(),
+			Status:    model.RoomStatusPending,
+			StartedAt: nil,
 			OwnerID:   userID,
 		},
 	}
 
-	if err := gm.msg.Send(ctx, userID, event); err != nil {
+	ev := &schema.PublishContent{
+		RoomID:  roomID,
+		Payload: event,
+	}
+
+	if err := gm.pub.Publish(ctx, "game", ev); err != nil {
 		return err
 	}
 
