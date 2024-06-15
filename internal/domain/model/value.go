@@ -8,7 +8,7 @@ type GameStatus string
 const (
 	GameStatusPending  GameStatus = "pending"
 	GameStatusPlaying  GameStatus = "playing"
-	GameStatusFinished GameStatus = "finished"
+	GameStatusFinished GameStatus = "finish"
 )
 
 const (
