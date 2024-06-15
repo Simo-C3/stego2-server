@@ -64,7 +64,7 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 			}
 			h.gm.FinCurrentSeq(ctx, roomID, userID, req.Payload.Cause)
 		case schema.TypeStartGame:
-			if err := h.gm.StartGame(ctx, roomID); err != nil {
+			if err := h.gm.StartGame(ctx, roomID, userID); err != nil {
 				fmt.Println(err)
 				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			}
