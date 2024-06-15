@@ -272,6 +272,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 				return err
 			}
+
 			// 2位まで決まったら終了
 			if rank == 2 {
 				game.Status = model.GameStatusFinished
@@ -312,8 +313,41 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				if err := gm.repo.DeleteGame(ctx, roomID); err != nil {
 					return err
 				}
-
 				return nil
+			}
+			return nil
+		} else {
+			if err := gm.repo.UpdateUser(ctx, user); err != nil {
+				return err
+			}
+			// gameのusersも更新
+			// TODO: 排他制御
+			game.Users[userID] = user
+			if err = gm.repo.UpdateGame(ctx, game); err != nil {
+				return err
+			}
+
+			// Publish: ChangeOtherUserState
+			publishContent := &schema.PublishContent{
+				RoomID: roomID,
+				Payload: schema.Base{
+					Type: schema.TypeChangeOtherUserState,
+					Payload: &schema.ChangeOtherUserState{
+						ID:       user.ID,
+						Name:     user.DisplayName,
+						Life:     user.Life,
+						Seq:      user.Sequences[0].Value,
+						InputSeq: user.Sequences[0].Value[:user.Pos],
+						Rank:     0,
+					},
+				},
+			}
+			publishJSON, err := json.Marshal(publishContent)
+			if err != nil {
+				return err
+			}
+			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+				return err
 			}
 		}
 	}
