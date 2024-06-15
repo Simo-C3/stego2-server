@@ -177,6 +177,10 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				userIDs = append(userIDs, id)
 			}
 		}
+
+		if len(userIDs) == 0 {
+			return nil
+		}
 		// ランダムに攻撃対象を選ぶ
 		attackedUserIndex := rand.Intn(len(userIDs))
 		// 攻撃対象のDifficultを増やす
@@ -275,7 +279,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			}
 
 			// 2位まで決まったら終了
-			if rank == 2 {
+			if rank <= 2 {
 				game.Status = model.GameStatusFinished
 				err := gm.repo.UpdateGame(ctx, game)
 				if err != nil {

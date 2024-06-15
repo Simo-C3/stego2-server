@@ -144,15 +144,17 @@ func (g *Game) GetRanking(userID string) (int, error) {
 		}
 	}
 
+	num := len(g.Users)
+
 	sort.Slice(deadUsers, func(i, j int) bool {
-		return deadUsers[i].DeadAt < deadUsers[j].DeadAt
+		return deadUsers[i].DeadAt > deadUsers[j].DeadAt
 	})
 
 	for rank, user := range deadUsers {
 		if user.ID == userID {
-			return rank + 1, nil
+			return num - rank, nil
 		}
 	}
 
-	return -1, errors.New("user not found")
+	return 1000, errors.New("user not found")
 }
