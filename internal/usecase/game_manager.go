@@ -60,7 +60,7 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 	pm := &schema.PublishContent{
 		RoomID: roomID,
 		Payload: schema.ChangeRoomState{
-			Type: schema.TypeStartGame,
+			Type: schema.TypeChangeRoom,
 			Payload: schema.ChangeRoomStatePayload{
 				UserNum:    len(game.Users),
 				Status:     game.Status.String(),
