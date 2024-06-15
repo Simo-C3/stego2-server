@@ -268,7 +268,7 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 		return err
 	}
 
-	event := &schema.ChangeRoomState{
+	crsp := &schema.ChangeRoomState{
 		Type: schema.TypeChangeRoom,
 		Payload: schema.ChangeRoomStatePayload{
 			UserNum:   len(game.Users),
@@ -280,15 +280,15 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 
 	ev := &schema.PublishContent{
 		RoomID:  roomID,
-		Payload: event,
+		Payload: crsp,
 	}
 
-	marshaledEvent, err := json.Marshal(ev)
+	marshaledCRSP, err := json.Marshal(ev)
 	if err != nil {
 		return err
 	}
 
-	if err := gm.pub.Publish(ctx, "game", marshaledEvent); err != nil {
+	if err := gm.pub.Publish(ctx, "game", marshaledCRSP); err != nil {
 		return err
 	}
 
@@ -310,6 +310,33 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 	}
 
 	if err = gm.repo.UpdateUser(ctx, user); err != nil {
+		return err
+	}
+
+	cosp := &schema.Base{
+		Type: schema.TypeChangeRoom,
+		Payload: schema.ChangeOtherUserState{
+			ID:       userID,
+			Name:     userID,
+			Life:     model.InitUserLife,
+			Seq:      user.Sequences[0].Value,
+			InputSeq: "",
+			Rank:     0,
+		},
+	}
+
+	ev = &schema.PublishContent{
+		RoomID:       roomID,
+		Payload:      cosp,
+		ExcludeUsers: []string{userID},
+	}
+
+	marshaledCOSP, err := json.Marshal(ev)
+	if err != nil {
+		return err
+	}
+
+	if err := gm.pub.Publish(ctx, "game", marshaledCOSP); err != nil {
 		return err
 	}
 

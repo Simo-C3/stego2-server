@@ -19,6 +19,7 @@ const (
 )
 
 const GameStartDelay = 5 // sec
+const InitUserLife = 5
 
 func NewGameStatus(status string) GameStatus {
 	switch status {
