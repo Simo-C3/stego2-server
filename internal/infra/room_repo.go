@@ -15,6 +15,7 @@ type RoomModel struct {
 	bun.BaseModel `bun:"table:rooms"`
 
 	ID         string `bun:",pk"` // Primary Key
+	OwnerID    string `bun:"owner_id"`
 	Name       string `bun:"name"`
 	HostName   string `bun:"host_name"`
 	MinUserNum int    `bun:"min_user_num"`
@@ -36,6 +37,7 @@ func NewRoomRepository(db *database.DB) repository.RoomRepository {
 func convertToDomainModel(room *RoomModel) *model.Room {
 	return &model.Room{
 		ID:         room.ID,
+		OwnerID:    room.OwnerID,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
@@ -48,6 +50,7 @@ func convertToDomainModel(room *RoomModel) *model.Room {
 func convertToDBModel(room *model.Room) *RoomModel {
 	return &RoomModel{
 		ID:         room.ID,
+		OwnerID:    room.OwnerID,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,

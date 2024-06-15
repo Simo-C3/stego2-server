@@ -4,6 +4,7 @@ import "sort"
 
 type Room struct {
 	ID         string
+	OwnerID    string
 	Name       string
 	HostName   string
 	MinUserNum int
@@ -32,9 +33,10 @@ type User struct {
 	Difficult   int
 }
 
-func NewRoom(id, name, hostName string, minUserNum, maxUserNum int, useCPU bool, status string) *Room {
+func NewRoom(id, ownerID, name, hostName string, minUserNum, maxUserNum int, useCPU bool, status string) *Room {
 	return &Room{
 		ID:         id,
+		OwnerID:    ownerID,
 		Name:       name,
 		HostName:   hostName,
 		MinUserNum: minUserNum,
