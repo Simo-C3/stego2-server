@@ -65,7 +65,7 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 		return err
 	}
 
-	start := time.Now().Add(30 * time.Second).Unix()
+	start := time.Now().Add(10 * time.Second).Unix()
 	pm := &schema.PublishContent{
 		RoomID: roomID,
 		Payload: schema.ChangeRoomState{
@@ -87,6 +87,33 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 
 	err = gm.pub.Publish(ctx, "game", pj)
 	if err != nil {
+		return err
+	}
+
+	// 全員に問題を配布
+	status := make([]*schema.ChangeOtherUserState, 0, len(game.Users))
+	for _, user := range game.Users {
+		status = append(status, &schema.ChangeOtherUserState{
+			ID:       user.ID,
+			Name:     user.DisplayName,
+			Life:     user.Life,
+			Seq:      user.Sequences[0].Value,
+			InputSeq: "",
+			Rank:     0,
+		})
+	}
+	publishContent := &schema.PublishContent{
+		RoomID: roomID,
+		Payload: schema.Base{
+			Type:    schema.TypeChangeOtherUsersState,
+			Payload: status,
+		},
+	}
+	publishJSON, err := json.Marshal(publishContent)
+	if err != nil {
+		return err
+	}
+	if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 		return err
 	}
 
@@ -376,43 +403,43 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 		return err
 	}
 
-	if err = gm.msg.Send(ctx, userID, &schema.Base{
-		Type: schema.TypeNextSeq,
-		Payload: schema.NextSeqEvent{
-			Value: user.Sequences[0].Value,
-			Type:  "default",
-			Level: user.Sequences[0].Level,
-		},
-	}); err != nil {
-		return err
-	}
+	// if err = gm.msg.Send(ctx, userID, &schema.Base{
+	// 	Type: schema.TypeNextSeq,
+	// 	Payload: schema.NextSeqEvent{
+	// 		Value: user.Sequences[0].Value,
+	// 		Type:  "default",
+	// 		Level: user.Sequences[0].Level,
+	// 	},
+	// }); err != nil {
+	// 	return err
+	// }
 
-	cosp := &schema.Base{
-		Type: schema.TypeChangeOtherUserState,
-		Payload: schema.ChangeOtherUserState{
-			ID:       userID,
-			Name:     user.DisplayName,
-			Life:     model.InitUserLife,
-			Seq:      user.Sequences[0].Value,
-			InputSeq: "",
-			Rank:     0,
-		},
-	}
+	// cosp := &schema.Base{
+	// 	Type: schema.TypeChangeOtherUserState,
+	// 	Payload: schema.ChangeOtherUserState{
+	// 		ID:       userID,
+	// 		Name:     user.DisplayName,
+	// 		Life:     model.InitUserLife,
+	// 		Seq:      user.Sequences[0].Value,
+	// 		InputSeq: "",
+	// 		Rank:     0,
+	// 	},
+	// }
 
-	ev = &schema.PublishContent{
-		RoomID:       roomID,
-		Payload:      cosp,
-		ExcludeUsers: []string{userID},
-	}
+	// ev = &schema.PublishContent{
+	// 	RoomID:       roomID,
+	// 	Payload:      cosp,
+	// 	ExcludeUsers: []string{userID},
+	// }
 
-	marshaledCOSP, err := json.Marshal(ev)
-	if err != nil {
-		return err
-	}
+	// marshaledCOSP, err := json.Marshal(ev)
+	// if err != nil {
+	// 	return err
+	// }
 
-	if err := gm.pub.Publish(ctx, "game", marshaledCOSP); err != nil {
-		return err
-	}
+	// if err := gm.pub.Publish(ctx, "game", marshaledCOSP); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
