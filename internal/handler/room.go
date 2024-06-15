@@ -146,7 +146,7 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusForbidden, "room is not pending")
 		}
 
-		game = model.NewGame(req.ID, model.GameStatusPending)
+		game = model.NewGame(req.ID, model.GameStatusPending, room)
 		if err := h.gameRepo.UpdateGame(ctx, game); err != nil {
 			c.Logger().Error(err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update game")

@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/handler"
 	"github.com/Simo-C3/stego2-server/internal/infra"
 	"github.com/Simo-C3/stego2-server/internal/router"
@@ -63,20 +62,6 @@ func main() {
 	publisher := infra.NewPublisher(redis)
 	subscriber := infra.NewSubscriber(redis)
 	msgSender := infra.NewMsgSender()
-
-	// testest
-	game := model.NewGame("1", model.GameStatusPending)
-	user := model.NewUser("1", "test")
-	game.AddUser(user)
-	if err := gameRepository.UpdateGame(context.Background(), game); err != nil {
-		e.Logger.Fatal(err)
-	}
-
-	if game, err := gameRepository.GetGameByID(context.Background(), "1"); err != nil {
-		e.Logger.Fatal(err)
-	} else {
-		e.Logger.Info(game)
-	}
 
 	// Init router
 	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, problemRepository, msgSender)

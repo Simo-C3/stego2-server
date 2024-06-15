@@ -21,7 +21,7 @@ type (
 	}
 
 	CreateRoomResponse struct {
-		RoomID string `json:"roomId"`
+		RoomID string `json:"id"`
 	}
 
 	GetRoomsResponse struct {

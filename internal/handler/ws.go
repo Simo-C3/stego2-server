@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/Simo-C3/stego2-server/internal/infra"
@@ -60,6 +61,11 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			}
 			h.gm.FinCurrentSeq(ctx, roomID, userID, req.Payload.Cause)
+		case schema.TypeStartGame:
+			if err := h.gm.StartGame(ctx, roomID); err != nil {
+				fmt.Println(err)
+				ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
+			}
 		}
 
 		if err := ws.WriteJSON(msg); err != nil {
