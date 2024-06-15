@@ -48,6 +48,11 @@ type ChangeRoomState struct {
 	OwnerID   string `json:"ownerId"`
 }
 
-type RankResult struct {
-	Rank int `json:"rank"`
+type ChangeOtherUserState struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Life     int    `json:"life"`
+	Seq      string `json:"seq"`
+	InputSeq string `json:"inputSeq"`
+	Rank     int    `json:"rank"`
 }
