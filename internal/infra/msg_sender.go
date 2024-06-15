@@ -2,9 +2,10 @@ package infra
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/service"
 	"github.com/gorilla/websocket"

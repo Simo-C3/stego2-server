@@ -3,11 +3,13 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"slices"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
@@ -41,20 +43,13 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 		return err
 	}
 
-	if game.ID == "" {
-		fmt.Println("game is nil")
-		return err
-	}
-
 	if game.BaseRoom.OwnerID != userID {
-		fmt.Println("not owner")
-		return fmt.Errorf("you are not owner")
+		return errors.New("you are not owner")
 	}
 
 	game.Status = model.GameStatusPlaying
 
-	err = gm.repo.UpdateGame(ctx, game)
-	if err != nil {
+	if err = gm.repo.UpdateGame(ctx, game); err != nil {
 		return err
 	}
 
@@ -126,6 +121,7 @@ func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key s
 		return err
 	}
 
+	// 進捗を全体共有
 	publishContent := &schema.PublishContent{
 		RoomID: gameID,
 		Payload: schema.Base{
@@ -143,7 +139,7 @@ func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key s
 	}
 	publishJSON, err := json.Marshal(publishContent)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
@@ -203,7 +199,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		}
 		publishJSON, err := json.Marshal(publishContent)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 			return err
@@ -222,7 +218,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		}
 		publishJSON, err = json.Marshal(publishContent)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 			return err
@@ -297,9 +293,13 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				}
 
 				for _, user := range game.Users {
-					gm.repo.DeleteUser(ctx, user.ID)
+					if err := gm.repo.DeleteUser(ctx, user.ID); err != nil {
+						log.Println("failed to delete user:", err)
+					}
 				}
-				gm.repo.DeleteGame(ctx, roomID)
+				if err := gm.repo.DeleteGame(ctx, roomID); err != nil {
+					return err
+				}
 
 				return nil
 			}
@@ -343,7 +343,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	}
 	publishJSON, err := json.Marshal(publishContent)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
@@ -375,7 +375,7 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 
 	marshaledCRSP, err := json.Marshal(ev)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err := gm.pub.Publish(ctx, "game", marshaledCRSP); err != nil {
@@ -448,16 +448,12 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 	ch := gm.sub.Subscribe(ctx, topic)
 	for msg := range ch {
 		// format: roomID,payload
-		fmt.Println("lets go!")
-		fmt.Println("payload: ", msg.Payload)
 		var content schema.PublishContent
 		if err := json.Unmarshal([]byte(msg.Payload), &content); err != nil {
-			fmt.Println("failed to unmarshal message:", err)
+			log.Println("failed to unmarshal message:", err)
 			continue
 		}
 
-		fmt.Println("roomID: ", content.RoomID)
-		fmt.Println("payload: ", content.Payload)
 		game, err := gm.repo.GetGameByID(ctx, content.RoomID)
 		if err != nil {
 			continue
@@ -479,6 +475,8 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 			userIDs = append(userIDs, user.ID)
 		}
 
-		gm.msg.Broadcast(ctx, userIDs, content.Payload)
+		if err := gm.msg.Broadcast(ctx, userIDs, content.Payload); err != nil {
+			log.Println("failed to broadcast message:", err)
+		}
 	}
 }
