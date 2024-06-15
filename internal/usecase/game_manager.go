@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/rand"
 	"time"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
@@ -35,7 +37,7 @@ func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key r
 	}
 
 	currentSeq := user.Sequences[0]
-	currentChar := currentSeq[user.Pos]
+	currentChar := currentSeq.Value[user.Pos]
 
 	isCorrect := rune(currentChar) == key
 	if isCorrect {
@@ -58,16 +60,83 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		return err
 	}
 
+	game, err := gm.repo.GetGameByID(ctx, roomID)
+	if err != nil {
+		return err
+	}
+
 	if cause == "succeeded" {
 		// 誰かを攻撃
+		// ルームから生きてるユーザーを取得
+		userIDs := make([]string, 0, len(game.Users))
+		for id, user := range game.Users {
+			if user.Life > 0 {
+				userIDs = append(userIDs, id)
+			}
+		}
+		// ランダムに攻撃対象を選ぶ
+		attackedUserIndex := rand.Intn(len(userIDs))
+		// 攻撃対象のDifficultを増やす
+		attackedUser, err := gm.repo.GetUserByID(ctx, userIDs[attackedUserIndex])
+		if err != nil {
+			return err
+		}
+		attackedUser.Difficult += user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10)))
+		err = gm.repo.UpdateUser(ctx, attackedUser)
+		if err != nil {
+			return err
+		}
+		return nil
 	} else if cause == "failed" {
 		user.Life--
 		if user.Life <= 0 {
 			//死亡
+			user.DeadAt = int(time.Now().Unix())
+			err := gm.repo.UpdateUser(ctx, user)
+			if err != nil {
+				return err
+			}
+			// 順位を返す && 2位まで決まったら終了
+			rank, err := game.GetRanking(userID)
+			if err != nil {
+				return err
+			}
+			result := &schema.RankResult{
+				Rank: rank,
+			}
+			gm.msg.Send(ctx, userID, result)
+			// 2位まで決まったら終了
+			if rank == 2 {
+				game.Status = model.GameStatusFinished
+				err := gm.repo.UpdateGame(ctx, game)
+				if err != nil {
+					return err
+				}
+
+				// publish content
+				p := &schema.PublishContent{
+					RoomID: roomID,
+					Payload: &schema.ChangeRoomState{
+						Status: "finish",
+					},
+				}
+
+				publishJSON, err := json.Marshal(p)
+				if err != nil {
+					return err
+				}
+				// publish
+				gm.pub.Publish(ctx, "game", publishJSON)
+				return nil
+			}
 		}
 	}
 
-	nextSeq := "例文です"
+	// 次の問題を取得
+	nextSeq := &model.Sequence{
+		Value: "This is a dummy sequence.",
+		Level: 2,
+	}
 
 	user.Sequences = append(user.Sequences[1:], nextSeq)
 	user.Pos = 0
