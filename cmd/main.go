@@ -52,6 +52,7 @@ func main() {
 
 	roomRepository := infra.NewRoomRepository(db)
 	gameRepository := infra.NewGameRepository(redis)
+	otpRepository := infra.NewOTPRepository(redis)
 	publisher := infra.NewPublisher(redis)
 	subscriber := infra.NewSubscriber(redis)
 	msgSender := infra.NewMsgSender()
@@ -60,6 +61,7 @@ func main() {
 	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, msgSender)
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository)
+	otpHandler := handler.NewOTPHandler(otpRepository)
 
 	// debug handler
 	debugHandler := handler.NewDebugHandler(publisher)
@@ -72,6 +74,7 @@ func main() {
 
 	// Init router
 	router.InitRoomRouter(g, roomHandler, authMiddleware)
+	router.InitOTPRouter(g, otpHandler, authMiddleware)
 
 	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
