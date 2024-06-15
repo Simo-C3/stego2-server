@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
@@ -17,9 +19,10 @@ type RoomHandler struct {
 	wsHandler *WSHandler
 	roomRepo  repository.RoomRepository
 	otpRepo   repository.OTPRepository
+	gameRepo  repository.GameRepository
 }
 
-func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository, otpRepo repository.OTPRepository) *RoomHandler {
+func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository, otpRepo repository.OTPRepository, gameRepo repository.GameRepository) *RoomHandler {
 	return &RoomHandler{
 		upgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -29,6 +32,7 @@ func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository, ot
 		wsHandler: wsHandler,
 		roomRepo:  roomRepo,
 		otpRepo:   otpRepo,
+		gameRepo:  gameRepo,
 	}
 }
 
@@ -41,6 +45,7 @@ func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string, owne
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCPU:     room.UseCPU,
+		Status:     "pending",
 	}
 }
 
@@ -116,26 +121,57 @@ func (h *RoomHandler) Matching(c echo.Context) error {
 }
 
 func (h *RoomHandler) JoinRoom(c echo.Context) error {
-	req := &schema.JoinRoomQuery{}
-	if err := c.Bind(req); err != nil {
+	var req schema.JoinRoomQuery
+	if err := c.Bind(&req); err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	ctx := c.Request().Context()
-	_, err := h.roomRepo.GetRoomByID(ctx, req.ID)
-	if err != nil {
-		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusNotFound, "room not found")
-	}
-
-	err = h.otpRepo.VerifyOTP(ctx, req.Otp)
+	userID, err := h.otpRepo.VerifyOTP(ctx, req.Otp)
 	if err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid otp")
 	}
 
-	// ユーザーをRoomに追加
+	game, err := h.gameRepo.GetGameByID(ctx, req.ID)
+	if err != nil {
+		room, err := h.roomRepo.GetRoomByID(ctx, req.ID)
+		if err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusNotFound, "room not found")
+		}
+
+		if room.Status != "pending" {
+			return echo.NewHTTPError(http.StatusForbidden, "room is not pending")
+		}
+
+		game = model.NewGame(req.ID, model.GameStatusPending)
+		if err := h.gameRepo.UpdateGame(ctx, game); err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update game")
+		}
+	}
+
+	user := model.NewUser(userID, "dummyDisplayName")
+	if err := game.AddUser(user); err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusForbidden, "failed to add user")
+	}
+
+	fmt.Printf("game: %+v\n", game)
+
+	if err := h.gameRepo.UpdateGame(ctx, game); err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update game")
+	}
+
+	if game, err := h.gameRepo.GetGameByID(ctx, req.ID); err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get game")
+	} else {
+		log.Println(game)
+	}
 
 	// Upgrade to websocket
 	ws, err := h.upgrader.Upgrade(c.Response(), c.Request(), nil)
@@ -145,7 +181,7 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	}
 	defer ws.Close()
 
-	h.wsHandler.Handle(ctx, ws, req.ID, "dummyUserID")
+	h.wsHandler.Handle(ctx, ws, req.ID, userID)
 
 	return nil
 }

@@ -56,6 +56,7 @@ func convertToDBModel(room *model.Room) *RoomModel {
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCPU:     room.UseCPU,
+		Status:     room.Status,
 	}
 }
 
