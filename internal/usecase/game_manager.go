@@ -161,71 +161,87 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	}
 
 	if cause == "succeeded" {
-		// 誰かを攻撃
-		// ルームから生きてるユーザーを取得
-		userIDs := make([]string, 0, len(game.Users))
-		for id, user := range game.Users {
-			// 自分以外でライフが残っているユーザーを攻撃対象にする
-			if user.Life > 0 && id != userID {
-				userIDs = append(userIDs, id)
+		seq := user.Sequences[0]
+		if seq.Type == "default" {
+			// 誰かを攻撃
+			// ルームから生きてるユーザーを取得
+			userIDs := make([]string, 0, len(game.Users))
+			for id, user := range game.Users {
+				// 自分以外でライフが残っているユーザーを攻撃対象にする
+				if user.Life > 0 && id != userID {
+					userIDs = append(userIDs, id)
+				}
 			}
-		}
 
-		if len(userIDs) == 0 {
-			return nil
-		}
-		// ランダムに攻撃対象を選ぶ
-		attackedUserIndex := rand.Intn(len(userIDs))
-		// 攻撃対象のDifficultを増やす
-		attackedUser, err := gm.repo.GetUserByID(ctx, userIDs[attackedUserIndex])
-		if err != nil {
-			return err
-		}
+			if len(userIDs) == 0 {
+				return nil
+			}
+			// ランダムに攻撃対象を選ぶ
+			attackedUserIndex := rand.Intn(len(userIDs))
+			// 攻撃対象のDifficultを増やす
+			attackedUser, err := gm.repo.GetUserByID(ctx, userIDs[attackedUserIndex])
+			if err != nil {
+				return err
+			}
 
-		// 攻撃力を計算
-		damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10))) * 50
-		attackedUser.Difficult += damage
-		err = gm.repo.UpdateUser(ctx, attackedUser)
-		if err != nil {
-			return err
-		}
-		// Publish: ChangeWordDifficult
-		publishContent := &schema.PublishContent{
-			RoomID: roomID,
-			Payload: schema.Base{
+			// 攻撃力を計算
+			damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10))) * 50
+			attackedUser.Difficult += damage
+			err = gm.repo.UpdateUser(ctx, attackedUser)
+			if err != nil {
+				return err
+			}
+			// Publish: ChangeWordDifficult
+			publishContent := &schema.PublishContent{
+				RoomID: roomID,
+				Payload: schema.Base{
+					Type: schema.TypeChangeWordDifficult,
+					Payload: &schema.ChangeWordDifficult{
+						Difficult: attackedUser.Difficult,
+						Cause:     "damage",
+					},
+				},
+				IncludeUsers: []string{attackedUser.ID},
+			}
+			publishJSON, err := json.Marshal(publishContent)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+				return err
+			}
+			// Publish: AttackEvent
+			publishContent = &schema.PublishContent{
+				RoomID: roomID,
+				Payload: schema.Base{
+					Type: schema.TypeAttack,
+					Payload: &schema.AttackEvent{
+						From:   userID,
+						To:     attackedUser.ID,
+						Damage: damage,
+					},
+				},
+			}
+			publishJSON, err = json.Marshal(publishContent)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+				return err
+			}
+		} else if seq.Type == "heal" {
+			event := schema.Base{
 				Type: schema.TypeChangeWordDifficult,
 				Payload: &schema.ChangeWordDifficult{
-					Difficult: attackedUser.Difficult,
-					Cause:     "damage",
+					Difficult: int(math.Min(float64(user.Difficult-200), 0)),
+					Cause:     "heal",
 				},
-			},
-			IncludeUsers: []string{attackedUser.ID},
-		}
-		publishJSON, err := json.Marshal(publishContent)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
-			return err
-		}
-		// Publish: AttackEvent
-		publishContent = &schema.PublishContent{
-			RoomID: roomID,
-			Payload: schema.Base{
-				Type: schema.TypeAttack,
-				Payload: &schema.AttackEvent{
-					From:   userID,
-					To:     attackedUser.ID,
-					Damage: damage,
-				},
-			},
-		}
-		publishJSON, err = json.Marshal(publishContent)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
-			return err
+			}
+
+			if err := gm.msg.Send(ctx, userID, &event); err != nil {
+				return err
+			}
+
 		}
 	} else if cause == "failed" {
 		user.Life--
@@ -355,15 +371,29 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	if level > 10 {
 		level = 10
 	}
+
+	isHeal := rand.Intn(100) < 10
+	if isHeal {
+		level += 3
+		if level > 10 {
+			level = 10
+		}
+	}
+
 	// 次の問題を取得
 	problems, err := gm.problem.GetProblems(ctx, level, 1)
 	if err != nil {
 		return err
 	}
 	problem := problems[0]
+	typ := "default"
+	if isHeal {
+		typ = "heal"
+	}
 	nextSeq := &model.Sequence{
 		Value: problem.CollectSentence,
 		Level: problem.Level,
+		Type:  typ,
 	}
 	user.Sequences = append(user.Sequences[1:], nextSeq)
 	user.Pos = 0
@@ -385,7 +415,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			Payload: &schema.NextSeqEvent{
 				Value: nextSeq.Value,
 				Level: nextSeq.Level,
-				Type:  "default",
+				Type:  typ,
 			},
 		},
 		IncludeUsers: []string{userID},

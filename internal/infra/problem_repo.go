@@ -43,7 +43,7 @@ func (p *problemRepository) GetProblems(ctx context.Context, level, limit int) (
 	problems := make([]ProblemModel, 0, limit)
 	query := p.db.NewSelect().
 		Model(&problems).
-		Where("level BETWEEN ? AND ?", level-1, level+1).
+		Where("? < level AND level < ?", level-1, level+1).
 		OrderExpr("RAND()").
 		Limit(limit)
 	err := query.Scan(ctx)
