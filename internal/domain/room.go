@@ -4,6 +4,13 @@ import (
 	"context"
 )
 
+const (
+	RoomStatusPending = "pending"
+	RoomStatusMatched = "matched"
+	RoomStatusPlaying = "playing"
+	RoomStatusFinish  = "finish"
+)
+
 type Room struct {
 	ID         string
 	Name       string
@@ -11,9 +18,10 @@ type Room struct {
 	MinUserNum int
 	MaxUserNum int
 	UseCpu     bool
+	Status     string
 }
 
-func NewRoom(id, name, hostName string, minUserNum, maxUserNum int, useCpu bool) *Room {
+func NewRoom(id, name, hostName string, minUserNum, maxUserNum int, useCpu bool, status string) *Room {
 	return &Room{
 		ID:         id,
 		Name:       name,
@@ -21,6 +29,7 @@ func NewRoom(id, name, hostName string, minUserNum, maxUserNum int, useCpu bool)
 		MinUserNum: minUserNum,
 		MaxUserNum: maxUserNum,
 		UseCpu:     useCpu,
+		Status:     status,
 	}
 }
 

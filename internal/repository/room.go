@@ -17,6 +17,7 @@ type RoomModel struct {
 	MinUserNum int    `bun:"min_user_num"`
 	MaxUserNum int    `bun:"max_user_num"`
 	UseCpu     bool   `bun:"use_cpu"`
+	Status     string `bun:"status"`
 }
 
 type RoomRepository struct {
@@ -31,6 +32,7 @@ func convertToDomainModel(room *RoomModel) *domain.Room {
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCpu:     room.UseCpu,
+		Status:     room.Status,
 	}
 }
 
@@ -42,6 +44,7 @@ func convertToDBModel(room *domain.Room) *RoomModel {
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCpu:     room.UseCpu,
+		Status:     room.Status,
 	}
 }
 

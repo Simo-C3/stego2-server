@@ -29,7 +29,7 @@ func NewRoomHandler(wsHandler *WSHandler, roomRepo *repository.RoomRepository) *
 	}
 }
 
-func convertToCreateRoomRequestDomainModel(room *schema.CreateRoomRequest, uuid string) *domain.Room {
+func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string) *domain.Room {
 	return &domain.Room{
 		ID:         uuid,
 		Name:       room.Name,
@@ -48,6 +48,7 @@ func convertToSchemaRoom(room *domain.Room) *schema.Room {
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
 		UseCpu:     room.UseCpu,
+		Status:     room.Status,
 	}
 }
 
@@ -78,7 +79,7 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 		return err
 	}
 
-	createRoomRequest := convertToCreateRoomRequestDomainModel(req, uuid)
+	createRoomRequest := convertToCreateRoomEntity(req, uuid)
 
 	roomID, err := h.repo.CreateRoom(c.Request().Context(), createRoomRequest)
 	if err != nil {
