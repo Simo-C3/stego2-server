@@ -13,6 +13,7 @@ import (
 	"github.com/Simo-C3/stego2-server/internal/usecase"
 	"github.com/Simo-C3/stego2-server/pkg/config"
 	"github.com/Simo-C3/stego2-server/pkg/database"
+	myMiddleware "github.com/Simo-C3/stego2-server/pkg/middleware"
 	"github.com/Simo-C3/stego2-server/pkg/redis"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -21,6 +22,10 @@ import (
 func main() {
 	cfg := config.New()
 	dbCfg := config.NewDBConfig()
+	amCfg := config.NewFirebaseConfig()
+
+	// middleware
+	authMiddleware := myMiddleware.NewAuthController(context.Background(), amCfg)
 
 	e := echo.New()
 	e.Use(middleware.Recover())
@@ -68,7 +73,9 @@ func main() {
 	gm := usecase.NewGameManager(publisher, gameRepository, msgSender)
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository)
-	router.InitRoomRouter(g, roomHandler)
+
+	// Init router
+	router.InitRoomRouter(g, roomHandler, authMiddleware)
 
 	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

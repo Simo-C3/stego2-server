@@ -53,3 +53,13 @@ func NewRedisConfig() *RedisConfig {
 func loadEnv(env, def string) string {
 	return cmp.Or(os.Getenv(env), def)
 }
+
+type FirebaseConfig struct {
+	ServiceAccount string
+}
+
+func NewFirebaseConfig() *FirebaseConfig {
+	return &FirebaseConfig{
+		ServiceAccount: os.Getenv("FIREBASE_SERVICE_ACCOUNT"),
+	}
+}
