@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/repository"
 	"github.com/Simo-C3/stego2-server/internal/domain/service"
@@ -88,11 +90,21 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 	ch := gm.sub.Subscribe(ctx, topic)
 	for msg := range ch {
-		if len(msg.PayloadSlice) != 2 {
+		// format: roomID,payload
+		fmt.Println("payload: ", msg.Payload)
+		payloadSlice := strings.SplitN(msg.Payload, ",", 2)
+		for _, payload := range payloadSlice {
+			fmt.Println(payload)
+		}
+
+		if len(payloadSlice) != 2 {
+			fmt.Println("invalid message")
 			continue
 		}
-		roomID := msg.PayloadSlice[0]
-		payload := msg.PayloadSlice[1]
+		roomID := payloadSlice[0]
+		fmt.Println("roomID: ", roomID)
+		payload := payloadSlice[1]
+		fmt.Println("payload: ", payload)
 		game, err := gm.repo.GetGameByID(ctx, roomID)
 		if err != nil {
 			continue
@@ -101,6 +113,8 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 		for _, user := range game.Users {
 			userIDs = append(userIDs, user.ID)
 		}
+		// dummy IDs
+		// userIDs := []string{"dummyUserID"}
 		gm.msg.Broadcast(ctx, userIDs, []byte(payload))
 	}
 }
