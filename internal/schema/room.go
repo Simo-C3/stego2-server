@@ -8,6 +8,7 @@ type (
 		MinUserNum int    `json:"minUserNum"`
 		MaxUserNum int    `json:"maxUserNum"`
 		UseCPU     bool   `json:"useCpu"`
+		Status     string `json:"status"`
 	}
 
 	CreateRoomRequest struct {

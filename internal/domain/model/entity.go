@@ -8,7 +8,8 @@ type Room struct {
 	HostName   string
 	MinUserNum int
 	MaxUserNum int
-	UseCpu     bool
+	UseCPU     bool
+	Status     string
 }
 
 type Game struct {
@@ -31,14 +32,15 @@ type User struct {
 	Difficult   int
 }
 
-func NewRoom(id, name, hostName string, minUserNum, maxUserNum int, useCpu bool) *Room {
+func NewRoom(id, name, hostName string, minUserNum, maxUserNum int, useCPU bool, status string) *Room {
 	return &Room{
 		ID:         id,
 		Name:       name,
 		HostName:   hostName,
 		MinUserNum: minUserNum,
 		MaxUserNum: maxUserNum,
-		UseCpu:     useCpu,
+		UseCPU:     useCPU,
+		Status:     status,
 	}
 }
 

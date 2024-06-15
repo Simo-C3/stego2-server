@@ -2,12 +2,20 @@ package model
 
 import "errors"
 
+type RoomStatus string
 type GameStatus string
 
 const (
 	GameStatusPending  GameStatus = "pending"
 	GameStatusPlaying  GameStatus = "playing"
 	GameStatusFinished GameStatus = "finished"
+)
+
+const (
+	RoomStatusPending = "pending"
+	RoomStatusMatched = "matched"
+	RoomStatusPlaying = "playing"
+	RoomStatusFinish  = "finish"
 )
 
 func NewGameStatus(status string) GameStatus {
