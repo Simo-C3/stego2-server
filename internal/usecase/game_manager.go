@@ -101,13 +101,16 @@ func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key s
 
 	publishContent := &schema.PublishContent{
 		RoomID: gameID,
-		Payload: &schema.ChangeOtherUserState{
-			ID:       user.ID,
-			Name:     user.DisplayName,
-			Life:     user.Life,
-			Seq:      user.Sequences[0].Value,
-			InputSeq: key,
-			Rank:     0,
+		Payload: schema.Base{
+			Type: schema.TypeTypingKey,
+			Payload: &schema.ChangeOtherUserState{
+				ID:       user.ID,
+				Name:     user.DisplayName,
+				Life:     user.Life,
+				Seq:      user.Sequences[0].Value,
+				InputSeq: key,
+				Rank:     0,
+			},
 		},
 		ExcludeUsers: []string{userID},
 	}
@@ -161,9 +164,12 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		// Publish: ChangeWordDifficult
 		publishContent := &schema.PublishContent{
 			RoomID: roomID,
-			Payload: &schema.ChangeWordDifficult{
-				Difficult: attackedUser.Difficult,
-				Cause:     "damage",
+			Payload: schema.Base{
+				Type: schema.TypeChangeWordDifficult,
+				Payload: &schema.ChangeWordDifficult{
+					Difficult: attackedUser.Difficult,
+					Cause:     "damage",
+				},
 			},
 			IncludeUsers: []string{attackedUser.ID},
 		}
@@ -177,10 +183,13 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		// Publish: AttackEvent
 		publishContent = &schema.PublishContent{
 			RoomID: roomID,
-			Payload: &schema.AttackEvent{
-				From:   userID,
-				To:     attackedUser.ID,
-				Damage: damage,
+			Payload: schema.Base{
+				Type: schema.TypeAttack,
+				Payload: &schema.AttackEvent{
+					From:   userID,
+					To:     attackedUser.ID,
+					Damage: damage,
+				},
 			},
 		}
 		publishJSON, err = json.Marshal(publishContent)
@@ -209,13 +218,16 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			// Publish: ChangeOtherUserState
 			publishContent := &schema.PublishContent{
 				RoomID: roomID,
-				Payload: &schema.ChangeOtherUserState{
-					ID:       user.ID,
-					Name:     user.DisplayName,
-					Life:     user.Life,
-					Seq:      user.Sequences[0].Value,
-					InputSeq: user.Sequences[0].Value[:user.Pos],
-					Rank:     rank,
+				Payload: schema.Base{
+					Type: schema.TypeChangeOtherUserState,
+					Payload: &schema.ChangeOtherUserState{
+						ID:       user.ID,
+						Name:     user.DisplayName,
+						Life:     user.Life,
+						Seq:      user.Sequences[0].Value,
+						InputSeq: user.Sequences[0].Value[:user.Pos],
+						Rank:     rank,
+					},
 				},
 			}
 			publishJSON, err := json.Marshal(publishContent)
@@ -239,7 +251,11 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 					Payload: &schema.ChangeRoomState{
 						Type: schema.TypeChangeRoom,
 						Payload: schema.ChangeRoomStatePayload{
-							Status: "finish",
+							UserNum:    len(game.Users),
+							Status:     model.RoomStatusFinish,
+							StartedAt:  nil,
+							StartDelay: model.GameStartDelay,
+							OwnerID:    game.BaseRoom.OwnerID,
 						},
 					},
 				}
@@ -279,17 +295,27 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		return err
 	}
 
-	err = gm.msg.Send(ctx, userID, map[string]interface{}{
-		"type": "NextSeq",
-		"payload": map[string]interface{}{
-			"value": nextSeq,
-			"type":  "default",
+	// Publish: NextSeq
+	publishContent := &schema.PublishContent{
+		RoomID: roomID,
+		Payload: schema.Base{
+			Type: schema.TypeNextSeq,
+			Payload: &schema.NextSeqEvent{
+				Value: nextSeq.Value,
+				Ruby:  "",
+				Type:  "default",
+			},
 		},
-	})
+		IncludeUsers: []string{userID},
+	}
+	publishJSON, err := json.Marshal(publishContent)
 	if err != nil {
 		return err
 	}
 
+	if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+		return err
+	}
 	return nil
 }
 

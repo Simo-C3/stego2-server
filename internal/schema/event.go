@@ -3,12 +3,14 @@ package schema
 type Type string
 
 const (
-	TypeFinCurrentSeq Type = "FinCurrentSeq"
-	TypeTypingKey     Type = "TypingKey"
-	TypeNextSeq       Type = "NextSeq"
-	TypeAttack        Type = "Attack"
-	TypeChangeRoom    Type = "ChangeRoomState"
-	TypeStartGame     Type = "StartGame"
+	TypeFinCurrentSeq        Type = "FinCurrentSeq"
+	TypeTypingKey            Type = "TypingKey"
+	TypeNextSeq              Type = "NextSeq"
+	TypeAttack               Type = "Attack"
+	TypeChangeRoom           Type = "ChangeRoomState"
+	TypeChangeOtherUserState Type = "ChangeOtherUserState"
+	TypeStartGame            Type = "StartGame"
+	TypeChangeWordDifficult  Type = "ChangeWordDifficult"
 )
 
 type Base struct {
