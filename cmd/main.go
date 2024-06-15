@@ -60,7 +60,7 @@ func main() {
 	// Init router
 	gm := usecase.NewGameManager(publisher, subscriber, gameRepository, msgSender)
 	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
-	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository)
+	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository, otpRepository)
 	otpHandler := handler.NewOTPHandler(otpRepository)
 
 	// debug handler

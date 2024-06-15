@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -30,7 +29,6 @@ func NewAuthController(ctx context.Context, cfg *config.FirebaseConfig) AuthCont
 	var opt option.ClientOption
 	if cred != "" {
 		s, err := base64.StdEncoding.DecodeString(cred)
-		fmt.Println(string(s))
 		if err != nil {
 			log.Fatalf("firebase service account base64 decode error: %+v", err)
 		}

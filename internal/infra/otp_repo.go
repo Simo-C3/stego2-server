@@ -2,15 +2,10 @@ package infra
 
 import (
 	"context"
-	"errors"
 
 	"github.com/Simo-C3/stego2-server/internal/domain/model"
 	"github.com/redis/go-redis/v9"
 )
-
-type otpModel struct {
-	userID string `redis:"userID"`
-}
 
 type OTPRepository struct {
 	redis *redis.Client
@@ -36,15 +31,10 @@ func (r *OTPRepository) GenerateOTP(ctx context.Context, userID string) (*model.
 	return otp, nil
 }
 
-func (r *OTPRepository) VerifyOTP(ctx context.Context, otp string, userID string) error {
-	otpModel := &otpModel{}
-	err := r.redis.Get(ctx, otp).Scan(otpModel)
+func (r *OTPRepository) VerifyOTP(ctx context.Context, otp string) error {
+	err := r.redis.Get(ctx, otp).Err()
 	if err != nil {
 		return err
-	}
-
-	if otpModel.userID != userID {
-		return errors.New("invalid otp")
 	}
 
 	err = r.redis.Del(ctx, otp).Err()

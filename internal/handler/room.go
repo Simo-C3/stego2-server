@@ -15,10 +15,11 @@ import (
 type RoomHandler struct {
 	upgrader  *websocket.Upgrader
 	wsHandler *WSHandler
-	repo      repository.RoomRepository
+	roomRepo  repository.RoomRepository
+	otpRepo   repository.OTPRepository
 }
 
-func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository) *RoomHandler {
+func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository, otpRepo repository.OTPRepository) *RoomHandler {
 	return &RoomHandler{
 		upgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -26,7 +27,8 @@ func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository) *R
 			},
 		},
 		wsHandler: wsHandler,
-		repo:      roomRepo,
+		roomRepo:  roomRepo,
+		otpRepo:   otpRepo,
 	}
 }
 
@@ -56,7 +58,7 @@ func convertToSchemaRoom(room *model.Room) *schema.Room {
 }
 
 func (h *RoomHandler) GetRooms(c echo.Context) error {
-	rooms, err := h.repo.GetRooms(c.Request().Context())
+	rooms, err := h.roomRepo.GetRooms(c.Request().Context())
 	if err != nil {
 		c.Logger().Error(err)
 		return err
@@ -90,7 +92,7 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 
 	createRoomRequest := convertToCreateRoomEntity(req, uuid, ownerID)
 
-	roomID, err := h.repo.CreateRoom(c.Request().Context(), createRoomRequest)
+	roomID, err := h.roomRepo.CreateRoom(c.Request().Context(), createRoomRequest)
 	if err != nil {
 		c.Logger().Error(err)
 		return err
@@ -100,7 +102,7 @@ func (h *RoomHandler) CreateRoom(c echo.Context) error {
 }
 
 func (h *RoomHandler) Matching(c echo.Context) error {
-	roomID, err := h.repo.Matching(c.Request().Context())
+	roomID, err := h.roomRepo.Matching(c.Request().Context())
 	if err != nil {
 		c.Logger().Error(err)
 		return err
@@ -114,13 +116,23 @@ func (h *RoomHandler) Matching(c echo.Context) error {
 }
 
 func (h *RoomHandler) JoinRoom(c echo.Context) error {
-	// Roomの存在を確認
-	roomID := c.Param("id")
+	req := &schema.JoinRoomQuery{}
+	if err := c.Bind(req); err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
 
 	ctx := c.Request().Context()
-	_, err := h.repo.GetRoomByID(ctx, roomID)
+	_, err := h.roomRepo.GetRoomByID(ctx, req.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusNotFound, "room not found")
+	}
+
+	err = h.otpRepo.VerifyOTP(ctx, req.Otp)
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid otp")
 	}
 
 	// ユーザーをRoomに追加
@@ -133,7 +145,7 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	}
 	defer ws.Close()
 
-	h.wsHandler.Handle(ctx, ws, roomID, "dummyUserID")
+	h.wsHandler.Handle(ctx, ws, req.ID, "dummyUserID")
 
 	return nil
 }

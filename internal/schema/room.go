@@ -32,4 +32,9 @@ type (
 	MatchingResponse struct {
 		ID string `json:"id"`
 	}
+
+	JoinRoomQuery struct {
+		ID  string `param:"id"`
+		Otp string `query:"p"`
+	}
 )
