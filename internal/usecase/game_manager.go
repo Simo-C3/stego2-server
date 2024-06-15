@@ -233,7 +233,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			event := schema.Base{
 				Type: schema.TypeChangeWordDifficult,
 				Payload: &schema.ChangeWordDifficult{
-					Difficult: int(math.Min(float64(user.Difficult-200), 0)),
+					Difficult: int(math.Max(float64(user.Difficult-200), 0)),
 					Cause:     "heal",
 				},
 			}
