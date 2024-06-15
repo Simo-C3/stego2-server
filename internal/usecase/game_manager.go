@@ -15,18 +15,20 @@ import (
 )
 
 type GameManager struct {
-	pub  service.Publisher
-	sub  service.Subscriber
-	repo repository.GameRepository
-	msg  service.MessageSender
+	pub     service.Publisher
+	sub     service.Subscriber
+	repo    repository.GameRepository
+	problem repository.ProblemRepository
+	msg     service.MessageSender
 }
 
-func NewGameManager(pub service.Publisher, sub service.Subscriber, repo repository.GameRepository, msg service.MessageSender) *GameManager {
+func NewGameManager(pub service.Publisher, sub service.Subscriber, repo repository.GameRepository, problem repository.ProblemRepository, msg service.MessageSender) *GameManager {
 	return &GameManager{
-		pub:  pub,
-		sub:  sub,
-		repo: repo,
-		msg:  msg,
+		pub:     pub,
+		sub:     sub,
+		repo:    repo,
+		problem: problem,
+		msg:     msg,
 	}
 }
 
@@ -132,12 +134,20 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		}
 	}
 
-	// 次の問題を取得
-	nextSeq := &model.Sequence{
-		Value: "This is a dummy sequence.",
-		Level: 2,
+	// levelを算出
+	level := user.Difficult / 100
+	if level > 10 {
+		level = 10
 	}
-
+	// 次の問題を取得
+	problem, err := gm.problem.GetProblems(ctx, level)
+	if err != nil {
+		return err
+	}
+	nextSeq := &model.Sequence{
+		Value: problem.CollectSentence,
+		Level: problem.Level,
+	}
 	user.Sequences = append(user.Sequences[1:], nextSeq)
 	user.Pos = 0
 

@@ -43,6 +43,12 @@ type User struct {
 	Difficult   int
 }
 
+type Problem struct {
+	ID              int
+	CollectSentence string
+	Level           int
+}
+
 type OTP struct {
 	OTP string
 }
@@ -78,6 +84,14 @@ func NewOTP() (*OTP, error) {
 	return &OTP{
 		OTP: otp,
 	}, nil
+}
+
+func NewProblem(id int, collectSentence string, level int) *Problem {
+	return &Problem{
+		ID:              id,
+		CollectSentence: collectSentence,
+		Level:           level,
+	}
 }
 
 func (g *Game) AddUser(user *User) error {
