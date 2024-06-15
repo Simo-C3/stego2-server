@@ -142,7 +142,8 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		// ルームから生きてるユーザーを取得
 		userIDs := make([]string, 0, len(game.Users))
 		for id, user := range game.Users {
-			if user.Life > 0 {
+			// 自分以外でライフが残っているユーザーを攻撃対象にする
+			if user.Life > 0 && id != userID {
 				userIDs = append(userIDs, id)
 			}
 		}
@@ -199,7 +200,6 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 			return err
 		}
-		return nil
 	} else if cause == "failed" {
 		user.Life--
 		if user.Life <= 0 {
@@ -268,7 +268,6 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 					return err
 				}
-				return nil
 			}
 		}
 	}
