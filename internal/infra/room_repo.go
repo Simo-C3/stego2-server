@@ -1,9 +1,10 @@
-package repository
+package infra
 
 import (
 	"context"
 
-	"github.com/Simo-C3/stego2-server/internal/domain"
+	"github.com/Simo-C3/stego2-server/internal/domain/model"
+	"github.com/Simo-C3/stego2-server/internal/domain/repository"
 	"github.com/Simo-C3/stego2-server/pkg/database"
 	"github.com/uptrace/bun"
 )
@@ -20,12 +21,18 @@ type RoomModel struct {
 	Status     string `bun:"status"`
 }
 
-type RoomRepository struct {
+type roomRepository struct {
 	db *database.DB
 }
 
-func convertToDomainModel(room *RoomModel) *domain.Room {
-	return &domain.Room{
+func NewRoomRepository(db *database.DB) repository.RoomRepository {
+	return &roomRepository{
+		db: db,
+	}
+}
+
+func convertToDomainModel(room *RoomModel) *model.Room {
+	return &model.Room{
 		ID:         room.ID,
 		Name:       room.Name,
 		HostName:   room.HostName,
@@ -36,7 +43,7 @@ func convertToDomainModel(room *RoomModel) *domain.Room {
 	}
 }
 
-func convertToDBModel(room *domain.Room) *RoomModel {
+func convertToDBModel(room *model.Room) *RoomModel {
 	return &RoomModel{
 		ID:         room.ID,
 		Name:       room.Name,
@@ -48,20 +55,14 @@ func convertToDBModel(room *domain.Room) *RoomModel {
 	}
 }
 
-func NewRoomRepository(db *database.DB) *RoomRepository {
-	return &RoomRepository{
-		db: db,
-	}
-}
-
-func (r *RoomRepository) GetRooms(ctx context.Context) ([]*domain.Room, error) {
+func (r *roomRepository) GetRooms(ctx context.Context) ([]*model.Room, error) {
 	var roomModels []*RoomModel
 	err := r.db.NewSelect().Model(&roomModels).Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rooms := make([]*domain.Room, 0, len(roomModels))
+	rooms := make([]*model.Room, 0, len(roomModels))
 	for _, roomModel := range roomModels {
 		rooms = append(rooms, convertToDomainModel(roomModel))
 	}
@@ -69,7 +70,7 @@ func (r *RoomRepository) GetRooms(ctx context.Context) ([]*domain.Room, error) {
 	return rooms, nil
 }
 
-func (r *RoomRepository) CreateRoom(ctx context.Context, room *domain.Room) (string, error) {
+func (r *roomRepository) CreateRoom(ctx context.Context, room *model.Room) (string, error) {
 	roomModel := convertToDBModel(room)
 	_, err := r.db.NewInsert().Model(roomModel).Exec(ctx)
 	if err != nil {
@@ -79,7 +80,7 @@ func (r *RoomRepository) CreateRoom(ctx context.Context, room *domain.Room) (str
 	return roomModel.ID, nil
 }
 
-func (r *RoomRepository) Matching(ctx context.Context) (string, error) {
+func (r *roomRepository) Matching(ctx context.Context) (string, error) {
 	var randomRoom RoomModel
 	query := r.db.NewSelect().Model(&randomRoom).OrderExpr("RAND()").Limit(1)
 	err := query.Scan(ctx)
@@ -88,4 +89,14 @@ func (r *RoomRepository) Matching(ctx context.Context) (string, error) {
 	}
 
 	return randomRoom.ID, nil
+}
+
+func (r *roomRepository) GetRoomByID(ctx context.Context, roomID string) (*model.Room, error) {
+	var roomModel RoomModel
+	err := r.db.NewSelect().Model(&roomModel).Where("id = ?", roomID).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertToDomainModel(&roomModel), nil
 }

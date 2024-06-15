@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"github.com/Simo-C3/stego2-server/internal/domain"
-	"github.com/Simo-C3/stego2-server/internal/repository"
+	"github.com/Simo-C3/stego2-server/internal/domain/model"
+	"github.com/Simo-C3/stego2-server/internal/domain/repository"
 	"github.com/Simo-C3/stego2-server/internal/schema"
 	"github.com/Simo-C3/stego2-server/pkg/uuid"
 	"github.com/gorilla/websocket"
@@ -14,10 +14,10 @@ import (
 type RoomHandler struct {
 	upgrader  *websocket.Upgrader
 	wsHandler *WSHandler
-	repo      *repository.RoomRepository
+	repo      repository.RoomRepository
 }
 
-func NewRoomHandler(wsHandler *WSHandler, roomRepo *repository.RoomRepository) *RoomHandler {
+func NewRoomHandler(wsHandler *WSHandler, roomRepo repository.RoomRepository) *RoomHandler {
 	return &RoomHandler{
 		upgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -29,25 +29,25 @@ func NewRoomHandler(wsHandler *WSHandler, roomRepo *repository.RoomRepository) *
 	}
 }
 
-func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string) *domain.Room {
-	return &domain.Room{
+func convertToCreateRoomEntity(room *schema.CreateRoomRequest, uuid string) *model.Room {
+	return &model.Room{
 		ID:         uuid,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
-		UseCpu:     room.UseCpu,
+		UseCPU:     room.UseCPU,
 	}
 }
 
-func convertToSchemaRoom(room *domain.Room) *schema.Room {
+func convertToSchemaRoom(room *model.Room) *schema.Room {
 	return &schema.Room{
 		ID:         room.ID,
 		Name:       room.Name,
 		HostName:   room.HostName,
 		MinUserNum: room.MinUserNum,
 		MaxUserNum: room.MaxUserNum,
-		UseCpu:     room.UseCpu,
+		UseCPU:     room.UseCPU,
 		Status:     room.Status,
 	}
 }
@@ -102,6 +102,13 @@ func (h *RoomHandler) Matching(c echo.Context) error {
 
 func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	// Roomの存在を確認
+	roomID := c.Param("id")
+
+	ctx := c.Request().Context()
+	_, err := h.repo.GetRoomByID(ctx, roomID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
 
 	// ユーザーをRoomに追加
 
@@ -113,7 +120,7 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	}
 	defer ws.Close()
 
-	h.wsHandler.Handle(ws)
+	h.wsHandler.Handle(ctx, ws, roomID, "dummyUserID")
 
 	return nil
 }

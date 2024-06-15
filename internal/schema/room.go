@@ -7,7 +7,7 @@ type (
 		HostName   string `json:"hostName"`
 		MinUserNum int    `json:"minUserNum"`
 		MaxUserNum int    `json:"maxUserNum"`
-		UseCpu     bool   `json:"useCpu"`
+		UseCPU     bool   `json:"useCpu"`
 		Status     string `json:"status"`
 	}
 
@@ -16,7 +16,7 @@ type (
 		HostName   string `json:"hostName"`
 		MinUserNum int    `json:"minUserNum"`
 		MaxUserNum int    `json:"maxUserNum"`
-		UseCpu     bool   `json:"useCpu"`
+		UseCPU     bool   `json:"useCpu"`
 	}
 
 	CreateRoomResponse struct {
