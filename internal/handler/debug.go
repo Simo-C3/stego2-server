@@ -56,7 +56,7 @@ func (h *DebugHandler) PingRedis(c echo.Context) error {
 
 func (h *DebugHandler) Publish(c echo.Context) error {
 	ctx := c.Request().Context()
-	if err := h.pub.Publish(ctx, "game", "Hello, World!"); err != nil {
+	if err := h.pub.Publish(ctx, "game", "01901ab9-2181-7b0a-9d9a-56e9afd418d4,Hello Tosaken!"); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
