@@ -16,20 +16,22 @@ import (
 )
 
 type GameManager struct {
-	pub     service.Publisher
-	sub     service.Subscriber
-	repo    repository.GameRepository
-	problem repository.ProblemRepository
-	msg     service.MessageSender
+	pub      service.Publisher
+	sub      service.Subscriber
+	repo     repository.GameRepository
+	roomRepo repository.RoomRepository
+	problem  repository.ProblemRepository
+	msg      service.MessageSender
 }
 
-func NewGameManager(pub service.Publisher, sub service.Subscriber, repo repository.GameRepository, problem repository.ProblemRepository, msg service.MessageSender) *GameManager {
+func NewGameManager(pub service.Publisher, sub service.Subscriber, repo repository.GameRepository, roomRepo repository.RoomRepository, problem repository.ProblemRepository, msg service.MessageSender) *GameManager {
 	return &GameManager{
-		pub:     pub,
-		sub:     sub,
-		repo:    repo,
-		problem: problem,
-		msg:     msg,
+		pub:      pub,
+		sub:      sub,
+		repo:     repo,
+		roomRepo: roomRepo,
+		problem:  problem,
+		msg:      msg,
 	}
 }
 
@@ -53,6 +55,13 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 
 	err = gm.repo.UpdateGame(ctx, game)
 	if err != nil {
+		return err
+	}
+
+	if err = gm.roomRepo.UpdateRoom(ctx, &model.Room{
+		ID:     roomID,
+		Status: model.RoomStatusPlaying,
+	}); err != nil {
 		return err
 	}
 

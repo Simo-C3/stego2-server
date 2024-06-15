@@ -11,4 +11,5 @@ type RoomRepository interface {
 	CreateRoom(ctx context.Context, room *model.Room) (string, error)
 	Matching(ctx context.Context) (string, error)
 	GetRoomByID(ctx context.Context, id string) (*model.Room, error)
+	UpdateRoom(ctx context.Context, room *model.Room) error
 }

@@ -110,3 +110,9 @@ func (r *roomRepository) GetRoomByID(ctx context.Context, roomID string) (*model
 
 	return convertToDomainModel(&roomModel), nil
 }
+
+func (r *roomRepository) UpdateRoom(ctx context.Context, room *model.Room) error {
+	roomModel := convertToDBModel(room)
+	_, err := r.db.NewUpdate().Model(roomModel).WherePK().Exec(ctx)
+	return err
+}
