@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/Simo-C3/stego2-server/internal/handler"
-	"github.com/Simo-C3/stego2-server/internal/repository"
+	"github.com/Simo-C3/stego2-server/internal/infra"
 	"github.com/Simo-C3/stego2-server/internal/router"
+	"github.com/Simo-C3/stego2-server/internal/usecase"
 	"github.com/Simo-C3/stego2-server/pkg/config"
 	"github.com/Simo-C3/stego2-server/pkg/database"
 	"github.com/Simo-C3/stego2-server/pkg/redis"
@@ -52,13 +53,24 @@ func main() {
 	}
 	defer db.Close()
 
-	roomRepository := repository.NewRoomRepository(db)
+	rdsCfg := config.NewRedisConfig()
+	redis, err := redis.New(rdsCfg)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+
+	roomRepository := infra.NewRoomRepository(db)
+	gameRepository := infra.NewGameRepository(redis)
+	publisher := infra.NewPublisher(redis)
+	msgSender := infra.NewMsgSender()
 
 	// Init router
-	wsHandler := handler.NewWSHandler()
+	gm := usecase.NewGameManager(publisher, gameRepository, msgSender)
+	wsHandler := handler.NewWSHandler(gm, msgSender.(*infra.MsgSender))
 	roomHandler := handler.NewRoomHandler(wsHandler, roomRepository)
 	router.InitRoomRouter(g, roomHandler)
 
+	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	// Start server

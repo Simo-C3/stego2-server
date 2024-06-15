@@ -11,4 +11,5 @@ func InitRoomRouter(g *echo.Group, roomHandler *handler.RoomHandler) {
 	room.GET("", roomHandler.GetRooms)
 	room.POST("", roomHandler.CreateRoom)
 	room.GET("/matching", roomHandler.Matching)
+	room.GET("/:id", roomHandler.JoinRoom)
 }
