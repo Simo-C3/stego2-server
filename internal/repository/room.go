@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Simo-C3/stego2-server/internal/domain"
 	"github.com/Simo-C3/stego2-server/pkg/database"
@@ -56,7 +55,6 @@ func (r *RoomRepository) GetRooms(ctx context.Context) ([]*domain.Room, error) {
 	var roomModels []*RoomModel
 	err := r.db.NewSelect().Model(&roomModels).Scan(ctx)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
@@ -81,7 +79,6 @@ func (r *RoomRepository) CreateRoom(ctx context.Context, room *domain.Room) (str
 func (r *RoomRepository) Matching(ctx context.Context) (string, error) {
 	var randomRoom RoomModel
 	query := r.db.NewSelect().Model(&randomRoom).OrderExpr("RAND()").Limit(1)
-	fmt.Println(query.QueryBuilder())
 	err := query.Scan(ctx)
 	if err != nil {
 		return "", err
