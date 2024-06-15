@@ -1,6 +1,10 @@
 package model
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/Simo-C3/stego2-server/pkg/otp"
+)
 
 type Room struct {
 	ID         string
@@ -33,6 +37,10 @@ type User struct {
 	Difficult   int
 }
 
+type OTP struct {
+	OTP string
+}
+
 func NewRoom(id, ownerID, name, hostName string, minUserNum, maxUserNum int, useCPU bool, status string) *Room {
 	return &Room{
 		ID:         id,
@@ -52,6 +60,18 @@ func NewUser(id, displayName string) *User {
 		DisplayName: displayName,
 		Life:        5,
 	}
+}
+
+func NewOTP() (*OTP, error) {
+	otp, err := otp.GenerateOTP(32)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &OTP{
+		OTP: otp,
+	}, nil
 }
 
 func (g *Game) AddUser(user *User) error {
