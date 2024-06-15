@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -113,20 +114,16 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 	ch := gm.sub.Subscribe(ctx, topic)
 	for msg := range ch {
 		// format: roomID,payload
+		fmt.Println("lets go!")
 		fmt.Println("payload: ", msg.Payload)
-		payloadSlice := strings.SplitN(msg.Payload, ",", 2)
-		for _, payload := range payloadSlice {
-			fmt.Println(payload)
-		}
-
-		if len(payloadSlice) != 2 {
-			fmt.Println("invalid message")
+		var content schema.PublishContent
+		if err := json.Unmarshal([]byte(msg.Payload), &content); err != nil {
+			fmt.Println("failed to unmarshal message:", err)
 			continue
 		}
-		roomID := payloadSlice[0]
-		fmt.Println("roomID: ", roomID)
-		payload := payloadSlice[1]
-		fmt.Println("payload: ", payload)
+
+		fmt.Println("roomID: ", content.RoomID)
+		fmt.Println("payload: ", content.Payload)
 		// game, err := gm.repo.GetGameByID(ctx, roomID)
 		// if err != nil {
 		// 	continue
@@ -137,6 +134,6 @@ func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 		// }
 		// dummy IDs
 		userIDs := []string{"dummyUserID"}
-		gm.msg.Broadcast(ctx, userIDs, payload)
+		gm.msg.Broadcast(ctx, userIDs, content.Payload)
 	}
 }
