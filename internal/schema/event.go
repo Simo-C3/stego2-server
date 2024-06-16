@@ -61,6 +61,7 @@ type ChangeRoomStatePayload struct {
 	Status     string `json:"status"`
 	StartedAt  *int64 `json:"startedAt"`
 	StartDelay int    `json:"startDelay"`
+	MaxUserNum int    `json:"maxUserNum"`
 	OwnerID    string `json:"ownerId"`
 }
 

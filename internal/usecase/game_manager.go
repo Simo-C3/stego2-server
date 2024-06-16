@@ -72,6 +72,7 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 				Status:     game.Status.String(),
 				StartedAt:  &start,
 				StartDelay: model.GameStartDelay,
+				MaxUserNum: game.BaseRoom.MaxUserNum,
 				OwnerID:    game.BaseRoom.OwnerID,
 			},
 		},
@@ -409,6 +410,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 							Status:     model.RoomStatusFinish,
 							StartedAt:  nil,
 							StartDelay: model.GameStartDelay,
+							MaxUserNum: game.BaseRoom.MaxUserNum,
 							OwnerID:    game.BaseRoom.OwnerID,
 						},
 					},
@@ -554,10 +556,11 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 	crsp := &schema.ChangeRoomState{
 		Type: schema.TypeChangeRoom,
 		Payload: schema.ChangeRoomStatePayload{
-			UserNum:   len(game.Users),
-			Status:    game.Status.String(),
-			StartedAt: nil,
-			OwnerID:   game.BaseRoom.OwnerID,
+			UserNum:    len(game.Users),
+			Status:     game.Status.String(),
+			StartedAt:  nil,
+			MaxUserNum: game.BaseRoom.MaxUserNum,
+			OwnerID:    game.BaseRoom.OwnerID,
 		},
 	}
 
