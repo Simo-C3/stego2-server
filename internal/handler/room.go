@@ -154,20 +154,24 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 		}
 	}
 
-	user := model.NewUser(userID, displayName)
-	if err := h.gameRepo.UpdateUser(ctx, user); err != nil {
-		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user")
-	}
+	_, userAlreadyExist := game.Users[userID]
 
-	if err := game.AddUser(user); err != nil {
-		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusForbidden, "failed to add user")
-	}
+	if !userAlreadyExist {
+		user := model.NewUser(userID, displayName)
+		if err := h.gameRepo.UpdateUser(ctx, user); err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user")
+		}
 
-	if err := h.gameRepo.UpdateGame(ctx, game); err != nil {
-		c.Logger().Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update game")
+		if err := game.AddUser(user); err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusForbidden, "failed to add user")
+		}
+
+		if err := h.gameRepo.UpdateGame(ctx, game); err != nil {
+			c.Logger().Error(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to update game")
+		}
 	}
 
 	// Upgrade to websocket
@@ -178,7 +182,7 @@ func (h *RoomHandler) JoinRoom(c echo.Context) error {
 	}
 	defer ws.Close()
 
-	h.wsHandler.Handle(ctx, ws, req.ID, userID)
+	h.wsHandler.Handle(ctx, ws, req.ID, userID, userAlreadyExist)
 
 	return nil
 }

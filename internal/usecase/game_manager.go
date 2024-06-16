@@ -623,6 +623,42 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 	return nil
 }
 
+func (gm *GameManager) Reconnect(ctx context.Context, roomID, userID string) error {
+	game, err := gm.repo.GetGameByID(ctx, roomID)
+	if err != nil {
+		return err
+	}
+
+	user := game.Users[userID]
+
+	// 自分の状態を取得
+	publishContent := &schema.PublishContent{
+		RoomID: roomID,
+		Payload: schema.Base{
+			Type: schema.TypeChangeOtherUserState,
+			Payload: schema.ChangeOtherUserState{
+				ID:       userID,
+				Name:     user.DisplayName,
+				Life:     user.Life,
+				Seq:      user.Sequences[0].Value,
+				InputSeq: "",
+				Rank:     0,
+			},
+		},
+		IncludeUsers: []string{userID},
+	}
+	publishJSON, err := json.Marshal(publishContent)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (gm *GameManager) SubscribeMessage(ctx context.Context, topic string) {
 	ch := gm.sub.Subscribe(ctx, topic)
 	for msg := range ch {

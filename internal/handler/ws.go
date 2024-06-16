@@ -23,7 +23,7 @@ func NewWSHandler(gm *usecase.GameManager, sender *infra.MsgSender) *WSHandler {
 	}
 }
 
-func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, userID string) {
+func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, userID string, userAlreadyExist bool) {
 	errCh := make(chan error)
 	defer close(errCh)
 
@@ -32,8 +32,14 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 
 	logger := logger.New()
 
-	if err := h.gm.Join(ctx, roomID, userID); err != nil {
-		logger.LogErrorWithStack(ctx, err)
+	if userAlreadyExist {
+		if err := h.gm.Reconnect(ctx, roomID, userID); err != nil {
+			logger.LogErrorWithStack(ctx, err)
+		}
+	} else {
+		if err := h.gm.Join(ctx, roomID, userID); err != nil {
+			logger.LogErrorWithStack(ctx, err)
+		}
 	}
 
 	for {
