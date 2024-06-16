@@ -115,8 +115,8 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 	return nil
 }
 
-func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key string, to string) error {
-	user, err := gm.repo.GetUserByID(ctx, to)
+func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key string) error {
+	user, err := gm.repo.GetUserByID(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key s
 		Payload: schema.Base{
 			Type: schema.TypeChangeOtherUserState,
 			Payload: schema.ChangeOtherUserState{
-				ID:       to,
+				ID:       userID,
 				Name:     user.DisplayName,
 				Life:     user.Life,
 				Seq:      user.Sequences[0].Value,

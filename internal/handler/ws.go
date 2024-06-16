@@ -55,7 +55,7 @@ func (h *WSHandler) Handle(ctx context.Context, ws *websocket.Conn, roomID, user
 			if err := json.Unmarshal(p, &req); err != nil {
 				logger.LogErrorWithStack(ctx, err)
 			}
-			if err := h.gm.TypeKey(ctx, roomID, userID, req.Payload.InputSeq, req.Payload.UserID); err != nil {
+			if err := h.gm.TypeKey(ctx, roomID, userID, req.Payload.InputSeq); err != nil {
 				logger.LogErrorWithStack(ctx, err)
 			}
 		case schema.TypeFinCurrentSeq:

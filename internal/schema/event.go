@@ -43,7 +43,6 @@ type TypingKey struct {
 	Type    Type `json:"type"`
 	Payload struct {
 		InputSeq string `json:"inputSeq"`
-		UserID   string `json:"userId"`
 	} `json:"payload"`
 }
 
