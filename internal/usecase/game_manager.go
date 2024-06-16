@@ -274,13 +274,16 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			return err
 		}
 		user.Life--
+		log.Println("[251] life: ", user.Life)
 		if user.Life <= 0 {
+			log.Println("[253] 死亡")
 			//死亡
 			user.DeadAt = int(time.Now().Unix())
 			err := gm.repo.UpdateUser(ctx, user)
 			if err != nil {
 				return err
 			}
+			log.Println("[260] DeadAt: ", user.DeadAt)
 			// gameのusersも更新
 			// TODO: 排他制御
 			game, err := gm.repo.GetGameByID(ctx, roomID)
@@ -296,6 +299,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			if err != nil {
 				return err
 			}
+			log.Println("[271] rank: ", rank)
 
 			// Publish: ChangeOtherUserState
 			publishContent := &schema.PublishContent{
@@ -316,12 +320,16 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			if err != nil {
 				return err
 			}
+			log.Println("[291] publishJSON: ", publishJSON)
+
 			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 				return err
 			}
 
 			// 2位まで決まったら終了
 			if rank <= 2 {
+				log.Println("[300] 終了")
+
 				// gameのstatusを更新
 				game, err := gm.repo.GetGameByID(ctx, roomID)
 				if err != nil {
@@ -370,6 +378,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 						},
 					},
 				}
+				log.Println("[320] p: ", p)
 
 				publishJSON, err = json.Marshal(p)
 				if err != nil {
@@ -379,6 +388,8 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 					return err
 				}
+
+				log.Println("[331] game: ", game)
 
 				for _, user := range game.Users {
 					if err := gm.repo.DeleteUser(ctx, user.ID); err != nil {
