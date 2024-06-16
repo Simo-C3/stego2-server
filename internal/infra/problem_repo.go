@@ -3,6 +3,7 @@ package infra
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"github.com/pkg/errors"
 
@@ -48,6 +49,8 @@ func (p *problemRepository) GetProblems(ctx context.Context, level, limit int) (
 		Where("level BETWEEN ? AND ?", level-1, level+1).
 		OrderExpr("RAND()").
 		Limit(limit)
+
+	log.Println(query.String())
 	err := query.Scan(ctx)
 
 	if errors.Is(err, sql.ErrNoRows) {
