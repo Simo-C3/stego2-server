@@ -404,6 +404,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			}
 			return nil
 		} else {
+			log.Println("[407] life: ", user.Life)
 			// 生存
 			if err := gm.repo.UpdateUser(ctx, user); err != nil {
 				return err
@@ -419,6 +420,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				return err
 			}
 
+			log.Println("[423] user: ", user)
 			// Publish: ChangeOtherUserState
 			publishContent := &schema.PublishContent{
 				RoomID: roomID,
@@ -438,6 +440,8 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			if err != nil {
 				return err
 			}
+
+			log.Println("[444] publishJSON: ", publishJSON)
 			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 				return err
 			}
@@ -472,6 +476,11 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		Value: problem.CollectSentence,
 		Level: problem.Level,
 		Type:  typ,
+	}
+
+	user, err = gm.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
 	}
 	user.Sequences = append(user.Sequences[1:], nextSeq)
 	user.Pos = 0
