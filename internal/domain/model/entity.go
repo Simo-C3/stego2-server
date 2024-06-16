@@ -159,7 +159,7 @@ func (g *Game) GetRanking(userID string) (int, error) {
 	log.Println("[153] num: ", num)
 
 	sort.Slice(deadUsers, func(i, j int) bool {
-		return deadUsers[i].DeadAt > deadUsers[j].DeadAt
+		return deadUsers[i].DeadAt < deadUsers[j].DeadAt
 	})
 	log.Printf("[158] deadUsers: %+v\n", deadUsers)
 
