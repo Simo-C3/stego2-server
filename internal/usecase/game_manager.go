@@ -38,18 +38,15 @@ func NewGameManager(pub service.Publisher, sub service.Subscriber, repo reposito
 }
 
 func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID string) error {
-	game, err := gm.repo.GetGameByID(ctx, roomID)
+	err := gm.repo.EditGame(ctx, roomID, func(game *model.Game) error {
+		if game.BaseRoom.OwnerID != userID {
+			return errors.New("you are not owner")
+		}
+
+		game.Status = model.GameStatusPlaying
+		return nil
+	})
 	if err != nil {
-		return err
-	}
-
-	if game.BaseRoom.OwnerID != userID {
-		return errors.New("you are not owner")
-	}
-
-	game.Status = model.GameStatusPlaying
-
-	if err = gm.repo.UpdateGame(ctx, game); err != nil {
 		return err
 	}
 
@@ -57,6 +54,11 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 		ID:     roomID,
 		Status: model.RoomStatusPlaying,
 	}); err != nil {
+		return err
+	}
+
+	game, err := gm.repo.GetGameByID(ctx, roomID)
+	if err != nil {
 		return err
 	}
 
