@@ -470,7 +470,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		level = 10
 	}
 
-	isHeal := rand.Intn(100) < 10
+	isHeal := rand.Intn(100) < 5 // 5%
 	if isHeal {
 		level += 3
 		if level > 10 {
