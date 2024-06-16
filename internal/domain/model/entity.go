@@ -65,6 +65,12 @@ type Problem struct {
 	Level           int
 }
 
+type GameResult struct {
+	UserID      string
+	DisplayName string
+	Rank        int
+}
+
 type OTP struct {
 	OTP string
 }
@@ -164,4 +170,33 @@ func (g *Game) GetRanking(userID string) (int, error) {
 	}
 
 	return 1000, errors.New("user not found")
+}
+
+func (g *Game) GetResult() ([]*GameResult, error) {
+	users := make([]*User, 0, len(g.Users))
+	for _, user := range g.Users {
+		users = append(users, user)
+	}
+
+	sort.Slice(users, func(i, j int) bool {
+		// DeadAtが初期値のものは1位 (DeadAtが大きいほど上位)
+		if users[i].DeadAt == 0 {
+			return true
+		}
+		if users[j].DeadAt == 0 {
+			return false
+		}
+		return users[i].DeadAt > users[j].DeadAt
+	})
+
+	res := make([]*GameResult, 0, len(users))
+	for i, user := range users {
+		res = append(res, &GameResult{
+			UserID:      user.ID,
+			DisplayName: user.DisplayName,
+			Rank:        i + 1,
+		})
+	}
+
+	return res, nil
 }
