@@ -172,25 +172,30 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			if len(userIDs) == 0 {
 				return nil
 			}
+
 			// ランダムに攻撃対象を選ぶ
 			attackedUserIndex := rand.Intn(len(userIDs))
-			// 攻撃対象のDifficultを増やす
-			attackedUser, err := gm.repo.GetUserByID(ctx, userIDs[attackedUserIndex])
+
+			// 攻撃力を計算
+			damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10))) * 20
+
+			// User を更新
+			var newDifficult int
+			targetUserID := userIDs[attackedUserIndex]
+			err = gm.repo.EditUser(ctx, targetUserID, func(u *model.User) error {
+				u.Difficult += damage
+				newDifficult = u.Difficult
+				return nil
+			})
 			if err != nil {
 				return err
 			}
 
-			// 攻撃力を計算
-			damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10))) * 20
-			attackedUser.Difficult += damage
-			err = gm.repo.UpdateUser(ctx, attackedUser)
+			err = gm.repo.EditGame(ctx, roomID, func(g *model.Game) error {
+				g.Users[targetUserID].Difficult += damage
+				return nil
+			})
 			if err != nil {
-				return err
-			}
-			// gameのusersも更新
-			// TODO: 排他制御
-			game.Users[attackedUser.ID] = attackedUser
-			if err = gm.repo.UpdateGame(ctx, game); err != nil {
 				return err
 			}
 
@@ -200,11 +205,11 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				Payload: schema.Base{
 					Type: schema.TypeChangeWordDifficult,
 					Payload: &schema.ChangeWordDifficult{
-						Difficult: attackedUser.Difficult,
+						Difficult: newDifficult,
 						Cause:     "damage",
 					},
 				},
-				IncludeUsers: []string{attackedUser.ID},
+				IncludeUsers: []string{targetUserID},
 			}
 			publishJSON, err := json.Marshal(publishContent)
 			if err != nil {
@@ -221,7 +226,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 					Type: schema.TypeAttack,
 					Payload: &schema.AttackEvent{
 						From:   userID,
-						To:     attackedUser.ID,
+						To:     targetUserID,
 						Damage: damage,
 					},
 				},
@@ -235,32 +240,32 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			}
 		} else if seq.Type == "heal" {
 			// 回復
-			user, err := gm.repo.GetUserByID(ctx, userID)
+			var newDifficult int
+			err = gm.repo.EditUser(ctx, userID, func(u *model.User) error {
+				u.Difficult -= 200
+				if user.Difficult < 0 {
+					user.Difficult = 0
+				}
+				newDifficult = u.Difficult
+				return nil
+			})
 			if err != nil {
 				return err
 			}
-			user.Difficult -= 200
-			if user.Difficult < 0 {
-				user.Difficult = 0
-			}
-			if err = gm.repo.UpdateUser(ctx, user); err != nil {
-				return err
-			}
+
 			// gameのusersも更新
-			// TODO: 排他制御
-			game, err := gm.repo.GetGameByID(ctx, roomID)
+			err = gm.repo.EditGame(ctx, roomID, func(g *model.Game) error {
+				g.Users[userID].Difficult = newDifficult
+				return nil
+			})
 			if err != nil {
-				return err
-			}
-			game.Users[userID] = user
-			if err = gm.repo.UpdateGame(ctx, game); err != nil {
 				return err
 			}
 
 			event := schema.Base{
 				Type: schema.TypeChangeWordDifficult,
 				Payload: &schema.ChangeWordDifficult{
-					Difficult: user.Difficult,
+					Difficult: newDifficult,
 					Cause:     "heal",
 				},
 			}
@@ -271,39 +276,60 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 
 		}
 	} else if cause == "failed" {
-		user, err := gm.repo.GetUserByID(ctx, userID)
+		var user *model.User
+		err = gm.repo.EditUser(ctx, userID, func(u *model.User) error {
+			u.Life--
+			user = u
+			return nil
+		})
 		if err != nil {
 			return err
 		}
-		user.Life--
-		log.Println("[251] life: ", user.Life)
+
+		// gameのusersも更新
+		err = gm.repo.EditGame(ctx, roomID, func(g *model.Game) error {
+			g.Users[userID].Life--
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
 		if user.Life <= 0 {
-			log.Println("[253] 死亡")
 			//死亡
-			user.DeadAt = int(time.Now().Unix())
-			err := gm.repo.UpdateUser(ctx, user)
+			deadAt := int(time.Now().Unix())
+			err := gm.repo.EditUser(ctx, userID, func(u *model.User) error {
+				u.DeadAt = deadAt
+				return nil
+			})
 			if err != nil {
 				return err
 			}
-			log.Println("[260] DeadAt: ", user.DeadAt)
+
 			// gameのusersも更新
-			// TODO: 排他制御
+			err = gm.repo.EditGame(ctx, roomID, func(g *model.Game) error {
+				g.Users[userID].DeadAt = deadAt
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+
+			// 順位を計算
 			game, err := gm.repo.GetGameByID(ctx, roomID)
 			if err != nil {
 				return err
 			}
-			game.Users[userID] = user
-			if err = gm.repo.UpdateGame(ctx, game); err != nil {
-				return err
-			}
-			// 順位を計算
 			rank, err := game.GetRanking(userID)
 			if err != nil {
 				return err
 			}
-			log.Println("[271] rank: ", rank)
 
 			// Publish: ChangeOtherUserState
+			user, err := gm.repo.GetUserByID(ctx, userID)
+			if err != nil {
+				return err
+			}
 			publishContent := &schema.PublishContent{
 				RoomID: roomID,
 				Payload: schema.Base{
@@ -322,7 +348,6 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			if err != nil {
 				return err
 			}
-			log.Println("[291] publishJSON: ", publishJSON)
 
 			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 				return err
@@ -330,23 +355,24 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 
 			// 2位まで決まったら終了
 			if rank <= 2 {
-				log.Println("[300] 終了")
-
 				// gameのstatusを更新
-				game, err := gm.repo.GetGameByID(ctx, roomID)
+				var rs []*model.GameResult
+
+				err := gm.repo.EditGame(ctx, roomID, func(g *model.Game) error {
+					g.Status = model.GameStatusFinished
+					var err error
+					rs, err = game.GetResult()
+					if err != nil {
+						return errors.WithStack(err)
+					}
+
+					return nil
+				})
 				if err != nil {
-					return err
-				}
-				game.Status = model.GameStatusFinished
-				if err = gm.repo.UpdateGame(ctx, game); err != nil {
 					return err
 				}
 
 				// Publish: Result
-				rs, err := game.GetResult()
-				if err != nil {
-					return err
-				}
 				results := make([]*schema.Result, 0, len(rs))
 				for _, r := range rs {
 					results = append(results, schema.NewResult(r.UserID, r.Rank, r.DisplayName))
@@ -380,7 +406,6 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 						},
 					},
 				}
-				log.Println("[320] p: ", p)
 
 				publishJSON, err = json.Marshal(p)
 				if err != nil {
@@ -390,8 +415,6 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 					return err
 				}
-
-				log.Println("[331] game: ", game)
 
 				for _, user := range game.Users {
 					if err := gm.repo.DeleteUser(ctx, user.ID); err != nil {
@@ -406,23 +429,10 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			}
 			return nil
 		} else {
-			log.Println("[407] life: ", user.Life)
-			// 生存
-			if err := gm.repo.UpdateUser(ctx, user); err != nil {
-				return err
-			}
-			// gameのusersも更新
-			// TODO: 排他制御
-			game, err := gm.repo.GetGameByID(ctx, roomID)
+			user, err := gm.repo.GetUserByID(ctx, userID)
 			if err != nil {
 				return err
 			}
-			game.Users[userID] = user
-			if err = gm.repo.UpdateGame(ctx, game); err != nil {
-				return err
-			}
-
-			log.Println("[423] user: ", user)
 			// Publish: ChangeOtherUserState
 			publishContent := &schema.PublishContent{
 				RoomID: roomID,
@@ -443,7 +453,6 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 				return err
 			}
 
-			log.Println("[444] publishJSON: ", publishJSON)
 			if err := gm.pub.Publish(ctx, "game", publishJSON); err != nil {
 				return err
 			}
@@ -451,6 +460,11 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 	}
 
 	// levelを算出
+	user, err = gm.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
 	level := user.Difficult / 100
 	if level > 10 {
 		level = 10
@@ -480,23 +494,23 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 		Type:  typ,
 	}
 
-	user, err = gm.repo.GetUserByID(ctx, userID)
+	err = gm.repo.EditUser(ctx, userID, func(u *model.User) error {
+		u.Sequences = append(u.Sequences[1:], nextSeq)
+		u.Pos = 0
+		return nil
+	})
 	if err != nil {
 		return err
 	}
-	user.Sequences = append(user.Sequences[1:], nextSeq)
-	user.Pos = 0
-	if err := gm.repo.UpdateUser(ctx, user); err != nil {
-		return err
-	}
+
 	// gameのusersも更新
-	// TODO: 排他制御
-	game, err := gm.repo.GetGameByID(ctx, roomID)
+	err = gm.repo.EditGame(ctx, roomID, func(g *model.Game) error {
+		g.Users[userID].Sequences = append(g.Users[userID].Sequences[1:], nextSeq)
+		g.Users[userID].Pos = 0
+
+		return nil
+	})
 	if err != nil {
-		return err
-	}
-	game.Users[userID] = user
-	if err = gm.repo.UpdateGame(ctx, game); err != nil {
 		return err
 	}
 
@@ -554,31 +568,34 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 		return err
 	}
 
-	user, err := gm.repo.GetUserByID(ctx, userID)
+	var user *model.User
+	err = gm.repo.EditUser(ctx, userID, func(u *model.User) error {
+		problems, err := gm.problem.GetProblems(ctx, 1, 2)
+		if err != nil {
+			return err
+		}
+
+		for _, problem := range problems {
+			u.Sequences = append(u.Sequences, &model.Sequence{
+				Value: problem.CollectSentence,
+				Level: problem.Level,
+			})
+		}
+
+		user = u
+
+		return nil
+	})
 	if err != nil {
-		return err
-	}
-
-	problems, err := gm.problem.GetProblems(ctx, 1, 2)
-	if err != nil {
-		return err
-	}
-
-	for _, problem := range problems {
-		user.Sequences = append(user.Sequences, &model.Sequence{
-			Value: problem.CollectSentence,
-			Level: problem.Level,
-		})
-	}
-
-	if err = gm.repo.UpdateUser(ctx, user); err != nil {
 		return err
 	}
 
 	// gameのusersも更新
-	// TODO: 排他制御
-	game.Users[userID] = user
-	if err = gm.repo.UpdateGame(ctx, game); err != nil {
+	err = gm.repo.EditGame(ctx, roomID, func(g *model.Game) error {
+		g.Users[userID] = user
+		return nil
+	})
+	if err != nil {
 		return err
 	}
 
@@ -592,33 +609,6 @@ func (gm *GameManager) Join(ctx context.Context, roomID, userID string) error {
 	}); err != nil {
 		return err
 	}
-
-	// cosp := &schema.Base{
-	// 	Type: schema.TypeChangeOtherUserState,
-	// 	Payload: schema.ChangeOtherUserState{
-	// 		ID:       userID,
-	// 		Name:     user.DisplayName,
-	// 		Life:     model.InitUserLife,
-	// 		Seq:      user.Sequences[0].Value,
-	// 		InputSeq: "",
-	// 		Rank:     0,
-	// 	},
-	// }
-
-	// ev = &schema.PublishContent{
-	// 	RoomID:       roomID,
-	// 	Payload:      cosp,
-	// 	ExcludeUsers: []string{userID},
-	// }
-
-	// marshaledCOSP, err := json.Marshal(ev)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if err := gm.pub.Publish(ctx, "game", marshaledCOSP); err != nil {
-	// 	return err
-	// }
 
 	return nil
 }
