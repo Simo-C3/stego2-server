@@ -3,7 +3,6 @@ package model
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
 	"sort"
 
 	"github.com/Simo-C3/stego2-server/pkg/otp"
@@ -145,30 +144,21 @@ func (g *Game) AddUser(user *User) error {
 }
 
 func (g *Game) GetRanking(userID string) (int, error) {
-	log.Println("GetRanking")
 	deadUsers := make([]*User, 0, len(g.Users))
 	for _, user := range g.Users {
-		log.Println("[145] user: ", user)
 		if user.Life <= 0 {
-			log.Println("[147] user.Life: ", user.Life)
 			deadUsers = append(deadUsers, user)
 		}
 	}
 
 	num := len(g.Users)
-	log.Println("[153] num: ", num)
 
 	sort.Slice(deadUsers, func(i, j int) bool {
 		return deadUsers[i].DeadAt < deadUsers[j].DeadAt
 	})
-	log.Printf("[158] deadUsers: %+v\n", deadUsers)
 
 	for rank, user := range deadUsers {
-		log.Println("[161] rank: ", rank)
-		log.Println("[167] user.ID: ", user.ID)
-		log.Printf("[168] user: %+v\n", user)
 		if user.ID == userID {
-			log.Println("[170] rank: ", rank)
 			return num - rank, nil
 		}
 	}
