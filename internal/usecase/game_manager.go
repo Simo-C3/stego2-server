@@ -60,7 +60,7 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 		return err
 	}
 
-	start := time.Now().Add(10 * time.Second).Unix()
+	start := time.Now().Add(5 * time.Second).Unix()
 	pm := &schema.PublishContent{
 		RoomID: roomID,
 		Payload: schema.ChangeRoomState{
