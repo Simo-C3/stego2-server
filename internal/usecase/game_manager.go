@@ -179,7 +179,7 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			}
 
 			// 攻撃力を計算
-			damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10))) * 50
+			damage := user.Sequences[0].Level * int(math.Max(1, float64(user.Streak/10))) * 20
 			attackedUser.Difficult += damage
 			err = gm.repo.UpdateUser(ctx, attackedUser)
 			if err != nil {
