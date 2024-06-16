@@ -97,3 +97,73 @@ func (g *gameRepository) DeleteUser(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (g *gameRepository) EditUser(ctx context.Context, userID string, fn func(*model.User) error) error {
+	_, err := g.redis.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		b, err := pipe.Get(ctx, userID).Bytes()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		var user model.User
+		if err := json.Unmarshal(b, &user); err != nil {
+			return errors.WithStack(err)
+		}
+
+		// Do edit function
+		if err := fn(&user); err != nil {
+			return errors.WithStack(err)
+		}
+
+		data, err := json.Marshal(user)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if err := pipe.Set(ctx, userID, data, 30*time.Minute).Err(); err != nil {
+			return errors.WithStack(err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func (g *gameRepository) EditGame(ctx context.Context, gameID string, fn func(*model.Game) error) error {
+	_, err := g.redis.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		b, err := pipe.Get(ctx, gameID).Bytes()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		var game model.Game
+		if err := json.Unmarshal(b, &game); err != nil {
+			return errors.WithStack(err)
+		}
+
+		// Do edit function
+		if err := fn(&game); err != nil {
+			return errors.WithStack(err)
+		}
+
+		data, err := json.Marshal(game)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if err := pipe.Set(ctx, gameID, data, 30*time.Minute).Err(); err != nil {
+			return errors.WithStack(err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
