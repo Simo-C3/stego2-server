@@ -250,8 +250,8 @@ func (gm *GameManager) FinCurrentSeq(ctx context.Context, roomID, userID, cause 
 			var newDifficult int
 			err = gm.repo.EditUser(ctx, userID, func(u *model.User) error {
 				u.Difficult -= 200
-				if user.Difficult < 0 {
-					user.Difficult = 0
+				if u.Difficult < 0 {
+					u.Difficult = 0
 				}
 				newDifficult = u.Difficult
 				return nil
