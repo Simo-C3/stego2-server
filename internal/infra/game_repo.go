@@ -98,9 +98,11 @@ func (g *gameRepository) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
+const MaxRetries = 1000
+
 func (g *gameRepository) EditUser(ctx context.Context, userID string, fn func(*model.User) error) error {
-	_, err := g.redis.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-		b, err := pipe.Get(ctx, userID).Bytes()
+	txf := func(tx *redis.Tx) error {
+		b, err := tx.Get(ctx, userID).Bytes()
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -119,23 +121,31 @@ func (g *gameRepository) EditUser(ctx context.Context, userID string, fn func(*m
 		if err != nil {
 			return errors.WithStack(err)
 		}
-
-		if err := pipe.Set(ctx, userID, data, 30*time.Minute).Err(); err != nil {
+		if err := tx.Set(ctx, userID, data, 30*time.Minute).Err(); err != nil {
 			return errors.WithStack(err)
 		}
-
 		return nil
-	})
-	if err != nil {
+	}
+
+	for range MaxRetries {
+		err := g.redis.Watch(ctx, txf, userID)
+		if err != nil {
+			return nil
+		}
+
+		if errors.Is(err, redis.TxFailedErr) {
+			continue
+		}
+
 		return errors.WithStack(err)
 	}
 
-	return nil
+	return errors.New("EditUser reached maximum number of retries")
 }
 
 func (g *gameRepository) EditGame(ctx context.Context, gameID string, fn func(*model.Game) error) error {
-	_, err := g.redis.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-		b, err := pipe.Get(ctx, gameID).Bytes()
+	txf := func(tx *redis.Tx) error {
+		b, err := tx.Get(ctx, gameID).Bytes()
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -154,16 +164,24 @@ func (g *gameRepository) EditGame(ctx context.Context, gameID string, fn func(*m
 		if err != nil {
 			return errors.WithStack(err)
 		}
-
-		if err := pipe.Set(ctx, gameID, data, 30*time.Minute).Err(); err != nil {
+		if err := tx.Set(ctx, gameID, data, 30*time.Minute).Err(); err != nil {
 			return errors.WithStack(err)
 		}
-
 		return nil
-	})
-	if err != nil {
+	}
+
+	for range MaxRetries {
+		err := g.redis.Watch(ctx, txf, gameID)
+		if err != nil {
+			return nil
+		}
+
+		if errors.Is(err, redis.TxFailedErr) {
+			continue
+		}
+
 		return errors.WithStack(err)
 	}
 
-	return nil
+	return errors.New("EditGame reached maximum number of retries")
 }
