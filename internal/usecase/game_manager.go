@@ -118,15 +118,22 @@ func (gm *GameManager) StartGame(ctx context.Context, roomID string, userID stri
 }
 
 func (gm *GameManager) TypeKey(ctx context.Context, gameID, userID string, key string) error {
+	user, err := gm.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
 	// 進捗を全体共有
 	publishContent := &schema.PublishContent{
 		RoomID: gameID,
-		Payload: schema.TypingKey{
-			Type: schema.TypeTypingKey,
-			Payload: struct {
-				InputSeq string "json:\"inputSeq\""
-			}{
+		Payload: schema.Base{
+			Type: schema.TypeChangeOtherUserState,
+			Payload: schema.ChangeOtherUserState{
+				ID:       userID,
+				Name:     user.DisplayName,
+				Life:     user.Life,
+				Seq:      user.Sequences[0].Value,
 				InputSeq: key,
+				Rank:     0,
 			},
 		},
 		ExcludeUsers: []string{userID},
